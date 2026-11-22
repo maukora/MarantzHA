@@ -43,3 +43,7 @@ pytest tests/test_dirac_slots.py
 pip install -r requirements_test.txt    # + Home Assistant entity tests (Python 3.14)
 pytest
 ```
+
+## License
+Apache License 2.0, the same as Home Assistant. `custom_components/denonavr/` is based on the Home
+Assistant core `denonavr` integration (© Home Assistant contributors, Apache-2.0).
