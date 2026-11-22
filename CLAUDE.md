@@ -9,6 +9,14 @@ other settings the library already reads but HA doesn't expose.
 Target hardware: **Marantz AV 20** (AV preamp/processor with Dirac Live). The owner is Markus, based in
 Finland. He has Dirac Live, REW and Home Assistant set up.
 
+## Markus's setup
+- AV 20 IP: **10.1.1.22** (web UI http://10.1.1.22/, telnet port 23)
+- HA `denonavr` config entry: title "AV 20", entry_id `denonavr:N1D2`; its entity is `media_player.av_20`
+- `media_player.marantz_av_20` is the HEOS entity (not denonavr). `media_player.den` is an old
+  restored entity that's no longer active.
+- Inputs in use: APPLE TV, Panasonic BD, AUX1, TV Audio, Tuner (+ HEOS radio)
+- Dev machine: Windows, PowerShell. The repo lives at `C:\Users\mauko\source\repos\denonavr-dirac-ha`
+
 ## Strategy (decided)
 1. **Phase 0, probe:** capture the exact telnet lines the AV 20 sends for each setting. Use
    `tools/telnet_probe.py`. Save captures in `captures/`. Don't guess formats. Base the parsers on
@@ -39,8 +47,7 @@ Finland. He has Dirac Live, REW and Home Assistant set up.
 - Dirac filter: `PSDIRAC 1`, `PSDIRAC 2`, `PSDIRAC 3`, `PSDIRAC OFF`. Query: `PSDIRAC ?`.
   The Dirac filter is stored **per input source**, so the value changes when the input changes.
   Re-query or listen for the event after `SI` changes.
-- The filter *names* set in the Dirac Live software are shown on the receiver's on-screen GUI. They are
-  probably NOT exposed over telnet/HTTP. Plan for user-configurable slot labels in the options flow.
+- VERIFIED: filter names ARE exposed: `OPDLSSL{1..3}NAME <name>` (+ `IMP`, `TYP`), pushed on changes.
 - In Direct/Pure Direct only distances and levels apply (no acoustic filter). Consider a derived
   "Dirac effective" attribute.
 - See `docs/protocol-notes.md` for the full list of candidate commands.
