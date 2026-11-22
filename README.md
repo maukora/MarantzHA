@@ -17,10 +17,21 @@ If PowerShell blocks the .ps1 script, run once:
 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
 ## Install the custom component (Phase 1)
-Copy `custom_components/denonavr/` to `/config/custom_components/denonavr/` on Home Assistant and
-restart. It overrides the built-in integration (same domain), so the existing "AV 20" entry keeps
-working. It is a copy of HA **2026.11.2**: after an HA update, refresh it from the new core version
-before restarting. The integration's "Use Telnet connection" option must be on for the Dirac select.
+
+### With HACS (recommended)
+1. HACS > the three-dot menu (top right) > **Custom repositories**.
+2. Repository: `https://github.com/maukora/MarantzHA`, type **Integration** > **Add**.
+3. Open "Denon AVR with Dirac Live (AV 20)" in HACS > **Download**, then restart Home Assistant.
+4. HA shows a "custom integration overrides core denonavr" warning in the log. That's expected.
+
+### Manually
+Copy `custom_components/denonavr/` to `/config/custom_components/denonavr/` and restart.
+
+### Notes
+It overrides the built-in integration (same domain), so the existing "AV 20" entry keeps working. It is
+a copy of HA **2026.11.2**: after an HA update, refresh it from the new core version before restarting
+(or uninstall it in HACS to go back to the built-in one). The integration's "Use Telnet connection"
+option must be on for the Dirac select.
 
 New entity: `select.av_20_dirac_live_filter`. Options are "Off" plus the filter names from Dirac Live
 (falls back to "Slot n" until the receiver pushes the names, e.g. after an input change).
