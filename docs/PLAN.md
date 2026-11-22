@@ -26,7 +26,8 @@
   | HDMI output | select | `VS` (library has it) |
   | Room size, Audio restorer, Delay | sensor/select | `PS…` (library has it) |
   | Input signal / sample rate / channels | sensor | candidates in protocol-notes; verify |
-- [ ] Options flow: labels for Dirac slots ("Slot 1" → e.g. "Movies – flat bass")
+- [ ] Dirac select options use the real filter names from `OPDLSSL{n}NAME` (fallback "Slot n"); attributes: filter type (ART), imported or empty
+- [ ] Sensors from verified events: `SYSDA` (input format), `SYSMI` (decoded mode), `SSINFAISFSV` (sample rate)
 - [ ] Re-query `PSDIRAC ?` after input change if the receiver doesn't push it
 - [ ] Tests with captured lines as fixtures
 - [ ] Install on HA (copy to /config/custom_components), restart, verify
