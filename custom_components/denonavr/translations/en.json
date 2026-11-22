@@ -76,6 +76,49 @@
     "select": {
       "dirac_filter": {
         "name": "Dirac Live filter"
+      },
+      "dimmer": {
+        "name": "Display dimmer"
+      },
+      "speaker_preset": {
+        "name": "Speaker preset"
+      }
+    },
+    "sensor": {
+      "input_format": {
+        "name": "Input audio format"
+      },
+      "decoded_mode": {
+        "name": "Decoded mode"
+      },
+      "input_signal": {
+        "name": "Input signal"
+      },
+      "sample_rate": {
+        "name": "Sample rate"
+      },
+      "smart_select_group": {
+        "name": "Smart Select group"
+      },
+      "sound_mode_raw": {
+        "name": "Sound mode (raw)"
+      },
+      "audio_delay": {
+        "name": "Audio delay"
+      },
+      "speaker_level": {
+        "name": "{channel} level"
+      },
+      "speaker_distance": {
+        "name": "{channel} distance"
+      }
+    },
+    "binary_sensor": {
+      "dirac_effective": {
+        "name": "Dirac Live active"
+      },
+      "setup_menu": {
+        "name": "Setup menu open"
       }
     }
   }

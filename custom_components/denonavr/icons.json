@@ -9,5 +9,55 @@
     "update_audyssey": {
       "service": "mdi:waveform"
     }
+  },
+  "entity": {
+    "select": {
+      "dirac_filter": {
+        "default": "mdi:tune-vertical"
+      },
+      "dimmer": {
+        "default": "mdi:brightness-6"
+      },
+      "speaker_preset": {
+        "default": "mdi:speaker-multiple"
+      }
+    },
+    "sensor": {
+      "input_format": {
+        "default": "mdi:surround-sound"
+      },
+      "decoded_mode": {
+        "default": "mdi:surround-sound"
+      },
+      "input_signal": {
+        "default": "mdi:waveform"
+      },
+      "sample_rate": {
+        "default": "mdi:sine-wave"
+      },
+      "smart_select_group": {
+        "default": "mdi:movie-open"
+      },
+      "sound_mode_raw": {
+        "default": "mdi:surround-sound"
+      },
+      "audio_delay": {
+        "default": "mdi:timer-outline"
+      },
+      "speaker_level": {
+        "default": "mdi:volume-equal"
+      },
+      "speaker_distance": {
+        "default": "mdi:ruler"
+      }
+    },
+    "binary_sensor": {
+      "dirac_effective": {
+        "default": "mdi:tune-vertical"
+      },
+      "setup_menu": {
+        "default": "mdi:menu"
+      }
+    }
   }
 }

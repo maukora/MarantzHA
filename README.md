@@ -33,8 +33,34 @@ a copy of HA **2026.11.2**: after an HA update, refresh it from the new core ver
 (or uninstall it in HACS to go back to the built-in one). The integration's "Use Telnet connection"
 option must be on for the Dirac select.
 
-New entity: `select.av_20_dirac_live_filter`. Options are "Off" plus the filter names from Dirac Live
-(falls back to "Slot n" until the receiver pushes the names, e.g. after an input change).
+### Entities added (all push-updated over telnet; need "Use Telnet connection")
+| Entity | What it shows | From |
+|---|---|---|
+| `select.av_20_dirac_live_filter` | Active Dirac slot, labelled with the Dirac Live filter names | `PSDIRAC`, `OPDLSSL*` |
+| `binary_sensor.av_20_dirac_live_active` | On when a filter is really applied (off in Direct/Pure Direct or Dirac Off) | `PSDIRAC` + `MS` |
+| `sensor.av_20_input_audio_format` | Incoming format, e.g. "Dolby Atmos", "PCM" | `SYSDA` |
+| `sensor.av_20_decoded_mode` | What the receiver decodes, e.g. "Multi Ch In" | `SYSMI` |
+| `sensor.av_20_input_signal` | Signal type (attribute `code`) | `SSINFAISSIG` |
+| `sensor.av_20_sample_rate` | Sample rate in kHz | `SSINFAISFSV` |
+| `sensor.av_20_smart_select_group` | Movie / Music / Game | `SSSMG` |
+| `sensor.av_20_sound_mode_raw` | Sound mode as the receiver names it | `MS` |
+| `sensor.av_20_audio_delay` | Audio delay in ms (per input) | `PSDELAY` |
+| `select.av_20_display_dimmer` | Front display brightness | `DIM` |
+| `select.av_20_speaker_preset` | Speaker preset 1/2 (changes what you hear) | `SPPR` |
+| `binary_sensor.av_20_setup_menu_open` | Setup menu open on screen | `MNMEN` |
+| `sensor.av_20_<speaker>_level` / `_distance` | Per-speaker channel level (dB) and distance (m), one pair per configured speaker; Dirac stores these per filter | `SSLEV*`, `SSSDE*` |
+
+The Dirac select falls back to "Slot n" until the receiver pushes the names (e.g. after an input
+change). The receiver has no known query for `SYSDA`/`SYSMI`, so those show "unknown" after an HA
+restart until the next signal change.
+
+## Second probe: speaker setup
+Crossovers, speaker sizes and subwoofer settings weren't in the first probe. To capture them,
+disable the "AV 20" entry in HA, then run (read-only `?` queries only):
+```powershell
+.\tools\run_probe.ps1 -Note speakers -Set speakers -Listen 60
+```
+Re-enable the entry afterwards and commit the new file in `captures/`.
 
 ## Tests
 ```
@@ -43,3 +69,7 @@ pytest tests/test_dirac_slots.py
 pip install -r requirements_test.txt    # + Home Assistant entity tests (Python 3.14)
 pytest
 ```
+
+## License
+Apache License 2.0, the same as Home Assistant. `custom_components/denonavr/` is based on the Home
+Assistant core `denonavr` integration (© Home Assistant contributors, Apache-2.0).

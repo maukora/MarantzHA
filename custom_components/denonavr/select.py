@@ -20,6 +20,7 @@ from denonavr.exceptions import AvrCommandError, DenonAvrError
 from . import DenonavrConfigEntry
 from .const import CONF_MANUFACTURER, CONF_USE_TELNET, DEFAULT_USE_TELNET, DOMAIN
 from .dirac_slots import DiracSlotTracker
+from .entity import DenonTelnetEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,7 +39,14 @@ async def async_setup_entry(
     """
     if not config_entry.options.get(CONF_USE_TELNET, DEFAULT_USE_TELNET):
         return
-    async_add_entities([DenonDiracFilterSelect(config_entry.runtime_data, config_entry)])
+    receiver = config_entry.runtime_data
+    async_add_entities(
+        [
+            DenonDiracFilterSelect(receiver, config_entry),
+            DenonDimmerSelect(receiver, config_entry),
+            DenonSpeakerPresetSelect(receiver, config_entry),
+        ]
+    )
 
 
 class DenonDiracFilterSelect(SelectEntity, RestoreEntity):
@@ -130,3 +138,61 @@ class DenonDiracFilterSelect(SelectEntity, RestoreEntity):
         """Unregister telnet callbacks."""
         self._receiver.unregister_callback("PS", self._ps_callback)
         self._receiver.unregister_callback("OP", self._op_callback)
+
+
+DIMMER_OPTIONS = ["Off", "Dark", "Dim", "Bright"]
+
+
+class DenonDimmerSelect(DenonTelnetEntity, SelectEntity):
+    """Front display brightness (DIM)."""
+
+    _telnet_events = ("DIM",)
+    _attr_entity_category = EntityCategory.CONFIG
+    def __init__(self, receiver: DenonAVR, config_entry: DenonavrConfigEntry) -> None:
+        """Initialize the entity."""
+        super().__init__(receiver, config_entry, "dimmer")
+        self._attr_options = list(DIMMER_OPTIONS)
+
+    @override
+    def _handle_event(self, event: str, parameter: str) -> bool:
+        return True
+
+    @property
+    @override
+    def current_option(self) -> str | None:
+        return self._receiver.dimmer
+
+    @override
+    async def async_select_option(self, option: str) -> None:
+        try:
+            await self._receiver.async_dimmer(option)
+        except (AvrCommandError, DenonAvrError) as err:
+            raise HomeAssistantError(f"Could not set dimmer: {err}") from err
+
+
+class DenonSpeakerPresetSelect(DenonTelnetEntity, SelectEntity):
+    """Speaker preset 1/2 (SPPR). Changes the active speaker setup."""
+
+    _telnet_events = ("SP",)
+    _attr_entity_category = EntityCategory.CONFIG
+    def __init__(self, receiver: DenonAVR, config_entry: DenonavrConfigEntry) -> None:
+        """Initialize the entity."""
+        super().__init__(receiver, config_entry, "speaker_preset")
+        self._attr_options = ["1", "2"]
+
+    @override
+    def _handle_event(self, event: str, parameter: str) -> bool:
+        return parameter.startswith("PR")
+
+    @property
+    @override
+    def current_option(self) -> str | None:
+        preset = self._receiver.speaker_preset
+        return None if preset is None else str(preset)
+
+    @override
+    async def async_select_option(self, option: str) -> None:
+        try:
+            await self._receiver.async_speaker_preset(int(option))
+        except (AvrCommandError, DenonAvrError, ValueError) as err:
+            raise HomeAssistantError(f"Could not set speaker preset: {err}") from err

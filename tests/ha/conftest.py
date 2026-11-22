@@ -9,3 +9,11 @@ pytest.importorskip("pytest_homeassistant_custom_component")
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Load custom_components/ from the repo root."""
     yield
+
+
+@pytest.fixture
+def receiver():
+    """A fake denonavr.DenonAVR."""
+    from .test_select import FakeReceiver
+
+    return FakeReceiver()
