@@ -62,6 +62,7 @@ def test_every_captured_status_line_parses():
 
 def test_signal_names():
     assert av_status.signal_name("25") == "Dolby Atmos"
+    assert av_status.signal_name("01") == "Analog"
     assert av_status.signal_name("04") == "Dolby Digital Plus"
     assert av_status.signal_name("99") == "Unknown (99)"
     assert av_status.signal_name(None) is None

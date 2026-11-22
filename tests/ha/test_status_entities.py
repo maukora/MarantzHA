@@ -66,6 +66,10 @@ async def test_dirac_effective(hass: HomeAssistant, receiver: FakeReceiver):
     assert state(hass, entity_id) == "off"
     receiver.push("MSDOLBY ATMOS")
     assert state(hass, entity_id) == "on"
+    receiver.push("ZMOFF")
+    assert state(hass, entity_id) == "off"
+    receiver.push("ZMON")
+    assert state(hass, entity_id) == "on"
     receiver.push("PSDIRAC OFF")
     assert state(hass, entity_id) == "off"
 
