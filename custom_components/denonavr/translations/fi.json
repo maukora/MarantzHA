@@ -76,6 +76,43 @@
     "select": {
       "dirac_filter": {
         "name": "Dirac Live -suodin"
+      },
+      "dimmer": {
+        "name": "Näytön himmennin"
+      },
+      "speaker_preset": {
+        "name": "Kaiutinesiasetus"
+      }
+    },
+    "sensor": {
+      "input_format": {
+        "name": "Tulevan äänen formaatti"
+      },
+      "decoded_mode": {
+        "name": "Dekoodaustila"
+      },
+      "input_signal": {
+        "name": "Tulosignaali"
+      },
+      "sample_rate": {
+        "name": "Näytteenottotaajuus"
+      },
+      "smart_select_group": {
+        "name": "Smart Select -ryhmä"
+      },
+      "sound_mode_raw": {
+        "name": "Äänitila (raaka)"
+      },
+      "audio_delay": {
+        "name": "Äänen viive"
+      }
+    },
+    "binary_sensor": {
+      "dirac_effective": {
+        "name": "Dirac Live käytössä"
+      },
+      "setup_menu": {
+        "name": "Asetusvalikko auki"
       }
     }
   }

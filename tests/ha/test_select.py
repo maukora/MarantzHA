@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections import defaultdict
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from homeassistant.components.select import (
     ATTR_OPTION,
     ATTR_OPTIONS,
@@ -62,6 +61,14 @@ class FakeReceiver:
         self.async_update_audyssey = AsyncMock()
         self.async_telnet_connect = AsyncMock()
         self.async_telnet_disconnect = AsyncMock()
+        self.async_send_telnet_commands = AsyncMock()
+        self.async_dimmer = AsyncMock()
+        self.async_speaker_preset = AsyncMock()
+        self.dimmer: str | None = "Dark"
+        self.speaker_preset: int | None = 2
+        self.delay: int | None = 162
+        self.sound_mode_raw: str | None = "DOLBY ATMOS"
+        self.settings_menu: bool | None = False
 
     def register_callback(self, event, callback):
         self.callbacks[event].append(callback)
@@ -70,13 +77,25 @@ class FakeReceiver:
         self.callbacks[event].remove(callback)
 
     def push(self, line: str) -> None:
-        """Simulate a telnet line the way denonavr dispatches it."""
-        event, parameter = line[:2], line[2:]
+        """Simulate a telnet line the way denonavr parses and dispatches it."""
+        event = "DIM" if line.startswith("DIM") else line[:2]
+        parameter = line[len(event):]
         if line.startswith("PSDIRAC "):
             value = line[8:]
             self.dirac.dirac_filter = {"OFF": "Off"}.get(value, f"Slot {value}")
-        for cb in self.callbacks[event]:
-            cb("Main", event, parameter)
+        elif line.startswith("PSDELAY "):
+            self.delay = int(line[8:])
+        elif event == "DIM":
+            self.dimmer = {"OFF": "Off", "DAR": "Dark", "DIM": "Dim", "BRI": "Bright"}[line[4:]]
+        elif line.startswith("SPPR "):
+            self.speaker_preset = int(line[5:])
+        elif line.startswith("MNMEN "):
+            self.settings_menu = line[6:] == "ON"
+        elif event == "MS" and not line.startswith(("MSSMART", "MSQUICK")):
+            self.sound_mode_raw = parameter
+        zone = "All" if event in {"DIM", "MN", "SY"} else "Main"
+        for cb in list(self.callbacks[event]):
+            cb(zone, event, parameter)
 
 
 def make_entry(use_telnet: bool = True) -> MockConfigEntry:
@@ -107,11 +126,6 @@ async def setup(hass: HomeAssistant, receiver: FakeReceiver, entry: MockConfigEn
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
-
-
-@pytest.fixture
-def receiver() -> FakeReceiver:
-    return FakeReceiver()
 
 
 async def test_slot_names_from_push(hass: HomeAssistant, receiver: FakeReceiver):

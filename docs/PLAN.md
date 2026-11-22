@@ -21,18 +21,19 @@
   | Entity | Platform | Source |
   |---|---|---|
   | Dirac Live filter (Slot 1/2/3/Off) | select | `PSDIRAC` |
-  | Sound mode (raw) | sensor | `MS` (already an attribute; promote to sensor) |
-  | Speaker preset | select | `SPPR` (library has it) |
+  | ✅ Sound mode (raw) | sensor | `MS` (already an attribute; promote to sensor) |
+  | ✅ Speaker preset | select | `SPPR` (library has it) |
   | ECO mode | select | `ECO` (library has it) |
-  | Dimmer | select | `DIM` (library has it) |
+  | ✅ Dimmer | select | `DIM` (library has it) |
   | HDMI output | select | `VS` (library has it) |
   | Room size, Audio restorer, Delay | sensor/select | `PS…` (library has it) |
-  | Input signal / sample rate / channels | sensor | candidates in protocol-notes; verify |
+  | ✅ Input signal / sample rate / channels | sensor | candidates in protocol-notes; verify |
 - [x] Dirac select options use the real filter names from `OPDLSSL{n}NAME` (fallback "Slot n"); attributes: filter type (ART), imported or empty
-- [ ] Sensors from verified events: `SYSDA` (input format), `SYSMI` (decoded mode), `SSINFAISFSV` (sample rate)
+- [x] Sensors from verified events: `SYSDA` (input format), `SYSMI` (decoded mode), `SSINFAISSIG`,
+      `SSINFAISFSV` (sample rate), `SSSMG`, `PSDELAY`; binary sensors "Dirac Live active" and setup menu
 - [ ] Re-query `PSDIRAC ?` after input change if the receiver doesn't push it
 - [x] Tests with captured lines as fixtures (Dirac select + parser)
-- [ ] Install on HA (copy to /config/custom_components), restart, verify
+- [x] Install on HA (via HACS custom repository), restart, verify (Dirac select, 2026-11-22)
 
 ## Phase 2: Upstream
 - [ ] PR to `ol-iver/denonavr`: Dirac slot names/types (`OPDLSSL*`) + tests. (`dirac_filter` and its
