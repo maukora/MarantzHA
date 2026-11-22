@@ -71,5 +71,12 @@
       "description": "Updates Audyssey settings.",
       "name": "Update Audyssey"
     }
+  },
+  "entity": {
+    "select": {
+      "dirac_filter": {
+        "name": "Dirac Live filter"
+      }
+    }
   }
 }

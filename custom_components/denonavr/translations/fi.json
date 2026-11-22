@@ -1,0 +1,82 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Laite on jo määritetty",
+      "cannot_connect": "Yhdistäminen epäonnistui. Yritä uudelleen. Virta- ja verkkokaapelien irrottaminen ja uudelleenkytkeminen voi auttaa",
+      "not_denonavr_manufacturer": "Ei Denon AVR -verkkovastaanotin, löydetty valmistaja ei täsmää",
+      "not_denonavr_missing": "Ei Denon AVR -verkkovastaanotin, löydetyt tiedot ovat puutteelliset"
+    },
+    "error": {
+      "discovery_error": "Denon AVR -verkkovastaanotinta ei löytynyt"
+    },
+    "flow_title": "{name}",
+    "step": {
+      "confirm": {
+        "description": "Vahvista vastaanottimen lisääminen"
+      },
+      "select": {
+        "data": {
+          "select_host": "Vastaanottimen IP-osoite"
+        },
+        "description": "Suorita asennus uudelleen, jos haluat yhdistää muita vastaanottimia",
+        "title": "Valitse yhdistettävä vastaanotin"
+      },
+      "user": {
+        "data": {
+          "host": "IP-osoite"
+        },
+        "data_description": {
+          "host": "Jätä tyhjäksi käyttääksesi automaattista hakua"
+        },
+        "description": "Oletuksena integraatio käyttää Telnet-yhteyttä vastaanottimeen reaaliaikaisia päivityksiä varten. Vastaanottimeen voi olla vain yksi Telnet-yhteys kerrallaan. Telnet-yhteyden voi poistaa käytöstä integraation asetuksista."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "show_all_sources": "Näytä kaikki lähteet",
+          "update_audyssey": "Päivitä Audyssey-asetukset",
+          "use_telnet": "Käytä Telnet-yhteyttä",
+          "zone2": "Ota käyttöön vyöhyke 2",
+          "zone3": "Ota käyttöön vyöhyke 3"
+        },
+        "description": "Valinnaiset asetukset"
+      }
+    }
+  },
+  "services": {
+    "get_command": {
+      "description": "Lähettää yleisen HTTP GET -komennon.",
+      "fields": {
+        "command": {
+          "description": "Komennon päätepiste parametreineen.",
+          "name": "Komento"
+        }
+      },
+      "name": "Lähetä komento"
+    },
+    "set_dynamic_eq": {
+      "description": "Ottaa DynamicEQ:n käyttöön tai pois käytöstä.",
+      "fields": {
+        "dynamic_eq": {
+          "description": "Otetaanko DynamicEQ käyttöön.",
+          "name": "Dynaaminen taajuuskorjain"
+        }
+      },
+      "name": "Aseta dynaaminen taajuuskorjain"
+    },
+    "update_audyssey": {
+      "description": "Päivittää Audyssey-asetukset.",
+      "name": "Päivitä Audyssey"
+    }
+  },
+  "entity": {
+    "select": {
+      "dirac_filter": {
+        "name": "Dirac Live -suodin"
+      }
+    }
+  }
+}
