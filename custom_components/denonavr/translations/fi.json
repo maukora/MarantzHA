@@ -105,6 +105,12 @@
       },
       "audio_delay": {
         "name": "Äänen viive"
+      },
+      "speaker_level": {
+        "name": "{channel} taso"
+      },
+      "speaker_distance": {
+        "name": "{channel} etäisyys"
       }
     },
     "binary_sensor": {

@@ -48,10 +48,19 @@ option must be on for the Dirac select.
 | `select.av_20_display_dimmer` | Front display brightness | `DIM` |
 | `select.av_20_speaker_preset` | Speaker preset 1/2 (changes what you hear) | `SPPR` |
 | `binary_sensor.av_20_setup_menu_open` | Setup menu open on screen | `MNMEN` |
+| `sensor.av_20_<speaker>_level` / `_distance` | Per-speaker channel level (dB) and distance (m), one pair per configured speaker; Dirac stores these per filter | `SSLEV*`, `SSSDE*` |
 
 The Dirac select falls back to "Slot n" until the receiver pushes the names (e.g. after an input
 change). The receiver has no known query for `SYSDA`/`SYSMI`, so those show "unknown" after an HA
 restart until the next signal change.
+
+## Second probe: speaker setup
+Crossovers, speaker sizes and subwoofer settings weren't in the first probe. To capture them,
+disable the "AV 20" entry in HA, then run (read-only `?` queries only):
+```powershell
+.\tools\run_probe.ps1 -Note speakers -Set speakers -Listen 60
+```
+Re-enable the entry afterwards and commit the new file in `captures/`.
 
 ## Tests
 ```

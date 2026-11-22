@@ -105,6 +105,12 @@
       },
       "audio_delay": {
         "name": "Audio delay"
+      },
+      "speaker_level": {
+        "name": "{channel} level"
+      },
+      "speaker_distance": {
+        "name": "{channel} distance"
       }
     },
     "binary_sensor": {

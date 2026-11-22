@@ -21,6 +21,17 @@ Verified on Markus's AV 20 at 10.1.1.22 from `captures/20261122-2227-first-probe
 - The slot is stored per input. `SI…` changes come with a new `PSDIRAC`/`OPDLS` state.
 - ✅ **Correction:** the slot names ARE available over telnet, so no user-configured labels are needed.
 
+## Speaker levels and distances ✅ (pushed after each Dirac slot change)
+| Line | Meaning |
+|---|---|
+| `SSLEVFR 535` … `SSLEV END` | Channel level: 2 digits = whole dB, 3 = tenths, 50 = 0 dB (`535` = +3.5 dB, `46` = −4 dB). Sent for all 33 possible channels. |
+| `SSSDEFL 0121` | Speaker distance in cm (1.21 m). Only for configured speakers, so it tells which speakers exist. `SSSDESW 0000` with a Dirac filter. |
+| `SSSDESTP 01M` / `01S` | Distance step/unit marker: `01M` with Dirac Off, `01S` with a filter (meaning unverified). |
+| `SS2DSSDEFL 0121`, `SS2DSCLVFL 52` | Same for FL/FR in a second ("2DS") block, probably the 2-channel/Direct set. Not used yet. |
+| `SSTTL*` | Test tone levels. Not used. |
+
+Crossovers / speaker sizes: not seen. Queries to try in the second probe (`--set speakers`).
+
 ## Signal / format info ✅ (all pushed as events)
 | Line | Meaning |
 |---|---|

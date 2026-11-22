@@ -43,6 +43,12 @@
       },
       "audio_delay": {
         "default": "mdi:timer-outline"
+      },
+      "speaker_level": {
+        "default": "mdi:volume-equal"
+      },
+      "speaker_distance": {
+        "default": "mdi:ruler"
       }
     },
     "binary_sensor": {

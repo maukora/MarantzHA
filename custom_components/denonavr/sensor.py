@@ -24,6 +24,7 @@ from .av_status import (
 )
 from .const import CONF_USE_TELNET, DEFAULT_USE_TELNET
 from .entity import DenonTelnetEntity
+from .speaker_sensor import SpeakerHub
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,6 +51,8 @@ async def async_setup_entry(
             DenonAudioDelaySensor(receiver, config_entry),
         ]
     )
+
+    SpeakerHub(hass, receiver, config_entry, async_add_entities).async_start()
 
     async def _initial_queries() -> None:
         # Read-only "?" queries over the integration's own telnet connection.
