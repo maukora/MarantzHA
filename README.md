@@ -56,7 +56,7 @@ the data comes from the HEOS entity in HA.
 | `binary_sensor.av_20_setup_menu_open` | Setup menu open on screen | `MNMEN` |
 | `sensor.av_20_<speaker>_level` | Per-speaker channel level (dB), one per configured speaker; Dirac stores these per filter | `SSLEV*` |
 | `sensor.av_20_<speaker>_delay` | Per-speaker Dirac delay (ms) while a Dirac filter is active, with a `relative_acoustic_distance_m` attribute (extra distance vs the acoustically closest speaker) | `SSSDE*` + `SSSDESTP 01S` |
-| `sensor.av_20_<speaker>_distance` | Per-speaker distance (m) while Dirac is Off | `SSSDE*` + `SSSDESTP 01M` |
+| `sensor.av_20_<speaker>_distance` | Per-speaker distance (m) while Dirac is Off. The delay sensors are unavailable and hidden while Dirac is Off, and the distance sensors while a filter is on | `SSSDE*` + `SSSDESTP 01M` |
 
 The Dirac select falls back to "Slot n" until the receiver pushes the names (e.g. after an input
 change). The receiver has no known query for `SYSDA`/`SYSMI`, so those show "unknown" after an HA
