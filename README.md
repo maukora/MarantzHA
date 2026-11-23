@@ -50,13 +50,19 @@ the data comes from the HEOS entity in HA.
 | `sensor.av_20_sample_rate` | Sample rate in kHz | `SSINFAISFSV` |
 | `sensor.av_20_smart_select_group` | Movie / Music / Game | `SSSMG` |
 | `sensor.av_20_sound_mode_raw` | Sound mode as the receiver names it | `MS` |
+| `sensor.av_20_active_speakers` / `_input_channels` | Speakers playing now / channels present in the input signal (attribute `pattern` = one digit per channel: 0 none, 1 idle, 2 active) | `OPINFASP`, `OPINFINS` |
+| `binary_sensor.av_20_auto_lip_sync`, `sensor.av_20_auto_lip_sync_delay` | Auto lip sync on/off and its current value (ms) | `OPALSSET`, `OPALSVAL` |
+| `number.av_20_subwoofer_level`, `_lfe_level`, `_bass`, `_treble` | Sub level (±12 dB), LFE level (0…−10 dB), bass/treble (±6 dB; setting one turns tone control on). **These change what you hear.** | `PSSWL`, `PSLFE`, `PSBAS`, `PSTRE` |
+| `switch.av_20_tone_control`, `select.av_20_dynamic_range_compression` | Tone control on/off, DRC Auto/Low/Medium/High/Off | `PSTONE CTRL`, `PSDRC` |
+| `number.av_20_<speaker>_trim` | Channel volume trims (±12 dB), one per channel the receiver reports for the current mode | `CV*` |
+| `sensor.av_20_input_source` | Selected input, e.g. "APPLE TV" (also the media player's `source`) | `SI` |
 | `sensor.av_20_audio_delay` | Audio delay in ms (per input) | `PSDELAY` |
 | `select.av_20_display_dimmer` | Front display brightness | `DIM` |
 | `select.av_20_speaker_preset` | Speaker preset 1/2 (changes what you hear) | `SPPR` |
 | `binary_sensor.av_20_setup_menu_open` | Setup menu open on screen | `MNMEN` |
 | `sensor.av_20_<speaker>_level` | Per-speaker channel level (dB), one per configured speaker; Dirac stores these per filter | `SSLEV*` |
 | `sensor.av_20_<speaker>_delay` | Per-speaker Dirac delay (ms) while a Dirac filter is active, with a `relative_acoustic_distance_m` attribute (extra distance vs the acoustically closest speaker) | `SSSDE*` + `SSSDESTP 01S` |
-| `sensor.av_20_<speaker>_distance` | Per-speaker distance (m) while Dirac is Off | `SSSDE*` + `SSSDESTP 01M` |
+| `sensor.av_20_<speaker>_distance` | Per-speaker distance (m) while Dirac is Off. The delay sensors are unavailable and hidden while Dirac is Off, and the distance sensors while a filter is on | `SSSDE*` + `SSSDESTP 01M` |
 
 The Dirac select falls back to "Slot n" until the receiver pushes the names (e.g. after an input
 change). The receiver has no known query for `SYSDA`/`SYSMI`, so those show "unknown" after an HA

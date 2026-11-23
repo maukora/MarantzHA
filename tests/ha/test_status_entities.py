@@ -56,6 +56,13 @@ async def test_library_backed_sensors(hass: HomeAssistant, receiver: FakeReceive
     assert state(hass, "sensor.av_20_audio_delay") == "0"
 
 
+async def test_input_source(hass: HomeAssistant, receiver: FakeReceiver):
+    await setup(hass, receiver, make_entry())
+    assert state(hass, "sensor.av_20_input_source") == "TV Audio"
+    receiver.push("SIMPLAY")
+    assert state(hass, "sensor.av_20_input_source") == "MPLAY"
+
+
 async def test_dirac_effective(hass: HomeAssistant, receiver: FakeReceiver):
     await setup(hass, receiver, make_entry())
     entity_id = "binary_sensor.av_20_dirac_live_active"
@@ -105,5 +112,5 @@ async def test_dimmer_and_preset(hass: HomeAssistant, receiver: FakeReceiver):
 
 async def test_no_entities_without_telnet(hass: HomeAssistant, receiver: FakeReceiver):
     await setup(hass, receiver, make_entry(use_telnet=False))
-    assert hass.states.async_entity_ids(("sensor", "binary_sensor", "select")) == []
+    assert hass.states.async_entity_ids(("sensor", "binary_sensor", "select", "number", "switch")) == []
     receiver.async_send_telnet_commands.assert_not_awaited()

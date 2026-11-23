@@ -26,6 +26,7 @@ from .speakers import (
     channel_name,
     delay_ms,
     distance_m,
+    is_delay_step,
     is_subwoofer,
     parse_speaker,
     relative_distances,
@@ -155,9 +156,36 @@ class SpeakerHub:
         self.raw_distances.pop(channel, None)
         self.levels.pop(channel, None)
 
+    def applies(self, kind: str) -> bool:
+        """Whether delay/distance sensors mean anything in the current mode.
+
+        With a Dirac filter the receiver reports delays, with Dirac Off
+        distances. Until the mode is known, both apply.
+        """
+        delays = is_delay_step(self.distance_step)
+        if delays is None or kind == LEVEL:
+            return True
+        return delays is (kind == DELAY)
+
+    def _sync_hidden(self, kind: str, entity: "SpeakerSensor") -> None:
+        """Hide the sensors that don't apply in this mode, show them again later."""
+        if kind == LEVEL or is_delay_step(self.distance_step) is None:
+            return
+        registry = er.async_get(self._hass)
+        if (entry := registry.async_get(entity.entity_id)) is None:
+            return
+        if not self.applies(kind):
+            if entry.hidden_by is None:
+                registry.async_update_entity(
+                    entity.entity_id, hidden_by=er.RegistryEntryHider.INTEGRATION
+                )
+        elif entry.hidden_by is er.RegistryEntryHider.INTEGRATION:
+            registry.async_update_entity(entity.entity_id, hidden_by=None)
+
     def _write(self, kinds: tuple[str, ...], channel: str | None = None) -> None:
-        for (kind, ch), entity in self._entities.items():
+        for (kind, ch), entity in list(self._entities.items()):
             if kind in kinds and (channel is None or ch == channel) and entity.hass is not None:
+                self._sync_hidden(kind, entity)
                 entity.async_write_ha_state()
 
     def _callback(self, zone: str, event: str, parameter: str) -> None:
@@ -245,6 +273,12 @@ class SpeakerSensor(DenonTelnetEntity, RestoreSensor):
         step = state.attributes.get(ATTR_STEP)
         if isinstance(raw, int) and isinstance(step, str):
             self._hub.seed(self._channel, raw, step)
+
+    @property
+    @override
+    def available(self) -> bool:
+        # Delays only mean something with a Dirac filter, distances without.
+        return super().available and self._hub.applies(self._kind)
 
     def _live_value(self) -> float | None:
         if self._kind == LEVEL:

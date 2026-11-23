@@ -55,13 +55,18 @@ async def test_sensors_created_from_dump(hass: HomeAssistant, receiver: FakeRece
     sub = hass.states.get("sensor.av_20_subwoofer_delay")
     assert sub.state == "0.0"
     assert "relative_acoustic_distance_m" not in sub.attributes
-    assert hass.states.get("sensor.av_20_front_left_distance").state == "unknown"
+    # Distances don't apply with a Dirac filter: unavailable and hidden.
+    assert hass.states.get("sensor.av_20_front_left_distance").state == "unavailable"
+    registry = er.async_get(hass)
+    assert registry.async_get("sensor.av_20_front_left_distance").hidden_by == "integration"
+    assert registry.async_get("sensor.av_20_front_left_delay").hidden_by is None
+    assert registry.async_get("sensor.av_20_front_left_level").hidden_by is None
     assert hass.states.get("sensor.av_20_front_left_level").state == "2.0"
     # Only configured speakers get sensors (15 speakers x level + delay + distance).
     speaker_ids = [
         e for e in hass.states.async_entity_ids("sensor")
         if e.endswith(("_level", "_distance", "_delay"))
-        and not e.endswith("audio_delay")
+        and not e.endswith(("audio_delay", "lip_sync_delay"))
     ]
     assert len(speaker_ids) == 45
     assert hass.states.get("sensor.av_20_top_front_left_level") is None
@@ -84,7 +89,11 @@ async def test_dirac_off_shows_distances(hass: HomeAssistant, receiver: FakeRece
     dist = hass.states.get("sensor.av_20_front_left_distance")
     assert dist.state == "2.6"
     assert dist.attributes["unit_of_measurement"] == "m"
-    assert hass.states.get("sensor.av_20_front_left_delay").state == "unknown"
+    # Dirac Off: delays are hidden instead.
+    assert hass.states.get("sensor.av_20_front_left_delay").state == "unavailable"
+    registry = er.async_get(hass)
+    assert registry.async_get("sensor.av_20_front_left_delay").hidden_by == "integration"
+    assert registry.async_get("sensor.av_20_front_left_distance").hidden_by is None
 
 
 async def test_sensors_recreated_after_restart(hass: HomeAssistant, receiver: FakeReceiver):
@@ -143,14 +152,27 @@ async def test_delays_restored_in_their_unit(hass: HomeAssistant, receiver: Fake
     delay = hass.states.get("sensor.av_20_front_left_delay")
     assert delay.state == "12.1"
     assert delay.attributes["relative_acoustic_distance_m"] == 0.34
-    assert hass.states.get("sensor.av_20_front_left_distance").state == "unknown"
+    assert hass.states.get("sensor.av_20_front_left_distance").state == "unavailable"
+    registry = er.async_get(hass)
+    assert registry.async_get("sensor.av_20_front_left_distance").hidden_by == "integration"
 
     # A new dump replaces the restored values.
     finish_startup_query(receiver)
     receiver.push("SSSDEFL 0260")
     receiver.push("SSSDESTP 01M")
     assert hass.states.get("sensor.av_20_front_left_distance").state == "2.6"
-    assert hass.states.get("sensor.av_20_front_left_delay").state == "unknown"
+    assert hass.states.get("sensor.av_20_front_left_delay").state == "unavailable"
+    # Shown again once it applies; a user's own hide is left alone.
+    assert registry.async_get("sensor.av_20_front_left_distance").hidden_by is None
+    registry.async_update_entity(
+        "sensor.av_20_front_left_distance", hidden_by=er.RegistryEntryHider.USER
+    )
+    receiver.push("SSSDEFL 0121")
+    receiver.push("SSSDESTP 01S")
+    await hass.async_block_till_done()
+    assert registry.async_get("sensor.av_20_front_left_distance").hidden_by == "user"
+    receiver.push("SSSDESTP 01M")
+    assert registry.async_get("sensor.av_20_front_left_distance").hidden_by == "user"
 
 
 QUERY = Path(__file__).resolve().parents[2] / "captures" / "20261123-1750-sssde-query-ha-log.log"

@@ -80,6 +80,15 @@ have changed since.
 `MV225`, `MUON`/`MUOFF`, `MNMEN ON/OFF` (setup menu open/closed), `SSFUN<code> <name>` (input
 renames), `SSHOS*` (HDMI/CEC settings), `SSPTSLSTHD*` (HDMI input assignments).
 
+## Channel info and lip sync (in HA since 2026.11.2.10)
+- `OPINFASP <32 digits>`: output speakers, one digit each: 0 = not set up, 1 = set up/idle, 2 = playing.
+  DD+ 2.0 on the 7.1.4 layout: `22121111011000011000000000000000` (FL FR + SW play, 12 set up);
+  Atmos: `22222222022000022000000000000000` (all 12 play). Position order beyond the first 8
+  (FL FR C SW SL SR SBL SBR?) is not verified.
+- `OPINFINS <20 digits>`: input signal channels, 2 = present (Atmos 7.1 bed: first 8 are 2).
+- `OPALSSET ON|OFF` auto lip sync, `OPALSVAL 000` its value (ms, assumed), `OPALSDSP ON|OFF` unknown.
+- Pushed on input/signal changes; no query known, so they are unknown after a restart until the next change.
+
 ## No reply on AV 20 ❌
 `CV?` (no direct reply, but CV lines arrive as events), `PSRSZ ?`, `PSRSTR ?`, `ECO?`.
 

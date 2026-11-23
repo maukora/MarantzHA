@@ -82,6 +82,9 @@
       },
       "speaker_preset": {
         "name": "Speaker preset"
+      },
+      "drc": {
+        "name": "Dynamic range compression"
       }
     },
     "sensor": {
@@ -114,6 +117,18 @@
       },
       "speaker_delay": {
         "name": "{channel} delay"
+      },
+      "input_source": {
+        "name": "Input source"
+      },
+      "auto_lip_sync_value": {
+        "name": "Auto lip sync delay"
+      },
+      "active_speakers": {
+        "name": "Active speakers"
+      },
+      "input_channels": {
+        "name": "Input channels"
       }
     },
     "binary_sensor": {
@@ -122,6 +137,31 @@
       },
       "setup_menu": {
         "name": "Setup menu open"
+      },
+      "auto_lip_sync": {
+        "name": "Auto lip sync"
+      }
+    },
+    "number": {
+      "subwoofer_level": {
+        "name": "Subwoofer level"
+      },
+      "lfe_level": {
+        "name": "LFE level"
+      },
+      "bass": {
+        "name": "Bass"
+      },
+      "treble": {
+        "name": "Treble"
+      },
+      "channel_volume": {
+        "name": "{channel} trim"
+      }
+    },
+    "switch": {
+      "tone_control": {
+        "name": "Tone control"
       }
     }
   }
