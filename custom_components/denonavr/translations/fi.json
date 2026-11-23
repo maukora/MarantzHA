@@ -129,6 +129,9 @@
       },
       "input_channels": {
         "name": "Tulokanavat"
+      },
+      "speaker_layout": {
+        "name": "Kaiutinkokoonpano"
       }
     },
     "binary_sensor": {

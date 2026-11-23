@@ -37,7 +37,7 @@ from .const import CONF_USE_TELNET, DEFAULT_USE_TELNET
 from .entity import DenonTelnetEntity
 from .setting_entity import DenonSettingEntity
 from .speaker_sensor import SpeakerHub
-from .speakers import SPEAKER_QUERY
+from .speakers import SPEAKER_CONFIG_QUERY, SPEAKER_QUERY
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -80,6 +80,9 @@ async def async_setup_entry(
             await receiver.async_send_telnet_commands(*INITIAL_QUERIES)
             # Speaker delays/distances are only pushed when they change, so
             # ask once. The answer lists every channel, configured or not.
+            # The speaker config tells how many subwoofers there are (the
+            # SSSDE answer lists all four sub outputs).
+            await receiver.async_send_telnet_commands(SPEAKER_CONFIG_QUERY)
             hub.expect_query()
             await receiver.async_send_telnet_commands(SPEAKER_QUERY)
         except DenonAvrError as err:

@@ -192,6 +192,7 @@ async def test_query_answer_updates_known_speakers_only(
     await setup(hass, receiver, entry)
     # Setup asks for the delays once; the answer follows.
     receiver.async_send_telnet_commands.assert_any_await("SSSDE ?")
+    receiver.async_send_telnet_commands.assert_any_await("SSSPC ?")
     for line in received_lines(QUERY):
         receiver.push(line)
     await hass.async_block_till_done()
@@ -251,3 +252,74 @@ async def test_unconfigured_speakers_from_old_version_removed(
         assert registry.async_get(f"sensor.av_20_top_front_left_{kind}") is None
         assert hass.states.get(f"sensor.av_20_top_front_left_{kind}") is None
     assert registry.async_get("sensor.av_20_front_left_level") is not None
+
+
+async def test_speaker_layout(hass: HomeAssistant, receiver: FakeReceiver):
+    await setup(hass, receiver, make_entry())
+    finish_startup_query(receiver)
+    assert hass.states.get("sensor.av_20_speaker_layout").state == "unknown"
+
+    replay_until_second_dump(receiver)
+    receiver.push("OPINFASP 22121111011000011000000000000000")
+    await hass.async_block_till_done()
+
+    layout = hass.states.get("sensor.av_20_speaker_layout")
+    # Markus's AV 20: 7 ear-level, 4 subwoofer outputs, 4 heights.
+    assert layout.state == "7.4.4"
+    speakers = {s["channel"]: s for s in layout.attributes["speakers"]}
+    assert list(speakers)[:3] == ["FL", "FR", "C"]
+    assert layout.attributes["speaker_count"] == 15
+    fl = speakers["FL"]
+    assert fl["group"] == "front"
+    assert fl["azimuth"] == -30 and fl["x"] == -0.5 and fl["y"] == 0.87
+    assert fl["playing"] is True
+    assert fl["level_db"] == 2.0
+    assert fl["delay_ms"] == 12.1
+    assert fl["relative_distance_m"] == 0.34
+    assert speakers["C"]["playing"] is False
+    assert speakers["SW2"]["playing"] is True  # all subs share one digit
+    assert speakers["FHL"]["group"] == "height"
+    assert speakers["FHL"]["playing"] is False
+    assert layout.attributes["playing_count"] == 6  # FL, FR + 4 sub outputs
+    assert layout.attributes["subwoofers"] is None
+
+    # The speaker config says one subwoofer: the unused outputs go away.
+    receiver.push("SSSPCSWF 1SP")
+    await hass.async_block_till_done()
+    layout = hass.states.get("sensor.av_20_speaker_layout")
+    assert layout.state == "7.1.4"
+    assert layout.attributes["subwoofers"] == 1
+    assert layout.attributes["speaker_count"] == 12
+    assert layout.attributes["playing_count"] == 3
+    assert hass.states.get("sensor.av_20_subwoofer_delay") is not None
+    assert hass.states.get("sensor.av_20_subwoofer_2_delay") is None
+    assert er.async_get(hass).async_get("sensor.av_20_subwoofer_3_level") is None
+
+    # Later SSSDE lines for the unused outputs don't bring them back.
+    receiver.push("SSSDESW4 0000")
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.av_20_subwoofer_4_delay") is None
+
+
+def test_sub_count_parsing():
+    from custom_components.denonavr.speakers import SUB_COUNT, parse_line, sub_index
+
+    assert parse_line("SSSPCSWF 1SP").kind == SUB_COUNT
+    assert parse_line("SSSPCSWF 1SP").value == 1
+    assert parse_line("SSSPCSWF NO").value == 0
+    assert parse_line("SSSPCSWL 2LR") is None
+    assert parse_line("SSSPCFRO YES") is None
+    assert [sub_index(c) for c in ("SW", "SW2", "SW4", "FL")] == [1, 2, 4, 0]
+
+
+def test_layout_names():
+    from custom_components.denonavr.layout import layout_name, playing_channels
+
+    assert layout_name({"FL", "FR", "C", "SL", "SR", "SW"}) == "5.1"
+    assert layout_name({"FL", "FR", "C", "SL", "SR", "SBL", "SBR", "SW",
+                        "FHL", "FHR", "RHL", "RHR"}) == "7.1.4"
+    assert layout_name(set()) is None
+    assert playing_channels("22222222022000022000000000000000") == {
+        "FL", "FR", "C", "SW", "SW2", "SW3", "SW4", "SL", "SR", "SBL", "SBR",
+        "FHL", "FHR", "RHL", "RHR",
+    }

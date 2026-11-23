@@ -55,6 +55,7 @@ the data comes from the HEOS entity in HA.
 | `number.av_20_subwoofer_level`, `_lfe_level`, `_bass`, `_treble` | Sub level (±12 dB), LFE level (0…−10 dB), bass/treble (±6 dB; setting one turns tone control on). **These change what you hear.** | `PSSWL`, `PSLFE`, `PSBAS`, `PSTRE` |
 | `switch.av_20_tone_control`, `select.av_20_dynamic_range_compression` | Tone control on/off, DRC Auto/Low/Medium/High/Off | `PSTONE CTRL`, `PSDRC` |
 | `number.av_20_<speaker>_trim` | Channel volume trims (±12 dB), one per channel the receiver reports for the current mode | `CV*` |
+| `sensor.av_20_speaker_layout` | Configured layout, e.g. "7.1.4" (ear level . sub outputs . heights). Attribute `speakers`: per speaker its group, nominal azimuth/elevation and x/y, `playing` (from `OPINFASP`), level, delay and relative distance. For dashboards, see `docs/dashboard-speaker-layout.md` | `SSSDE*`, `SSLEV*`, `OPINFASP` |
 | `sensor.av_20_input_source` | Selected input, e.g. "APPLE TV" (also the media player's `source`) | `SI` |
 | `sensor.av_20_audio_delay` | Audio delay in ms (per input) | `PSDELAY` |
 | `select.av_20_display_dimmer` | Front display brightness | `DIM` |

@@ -1,0 +1,10 @@
+# SSSPC ? sent via HA denonavr.get_command (HTTP), answer from HA debug log (denonavr.api)
+  0.000 << SSSPCFRO YES
+  0.039 << SSSPCCEN YES
+  0.040 << SSSPCSUA YES
+  0.040 << SSSPCSBK YES
+  0.044 << SSSPCSBK 2SP
+  0.053 << SSSPCFRW NO
+  0.088 << SSSPCSWM DRC
+  0.089 << SSSPCSWL 2LR
+  0.089 << SSSPCSWF 1SP
