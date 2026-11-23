@@ -69,6 +69,7 @@ class FakeReceiver:
         self.delay: int | None = 162
         self.sound_mode_raw: str | None = "DOLBY ATMOS"
         self.settings_menu: bool | None = False
+        self.power: str | None = "ON"
 
     def register_callback(self, event, callback):
         self.callbacks[event].append(callback)
@@ -89,6 +90,8 @@ class FakeReceiver:
             self.dimmer = {"OFF": "Off", "DAR": "Dark", "DIM": "Dim", "BRI": "Bright"}[line[4:]]
         elif line.startswith("SPPR "):
             self.speaker_preset = int(line[5:])
+        elif line.startswith("ZM"):
+            self.power = "ON" if line == "ZMON" else "OFF"
         elif line.startswith("MNMEN "):
             self.settings_menu = line[6:] == "ON"
         elif event == "MS" and not line.startswith(("MSSMART", "MSQUICK")):

@@ -24,6 +24,7 @@ KEYS = (INPUT_FORMAT, DECODED_MODE, INPUT_SIGNAL, SAMPLE_RATE, SMART_SELECT_GROU
 
 # Signal codes seen in the captures. Add more as they show up.
 SIGNAL_CODES = {
+    "01": "Analog",  # seen in HA with SYSDA "Analog"
     "02": "PCM",
     "04": "Dolby Digital Plus",
     "12": "No signal",

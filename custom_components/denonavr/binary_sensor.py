@@ -41,7 +41,7 @@ class DenonDiracEffectiveSensor(DenonTelnetEntity, BinarySensorEntity):
     levels apply.
     """
 
-    _telnet_events = ("PS", "MS")
+    _telnet_events = ("PS", "MS", "PW", "ZM")
 
     def __init__(self, receiver: DenonAVR, config_entry: DenonavrConfigEntry) -> None:
         """Initialize the sensor."""
@@ -49,11 +49,13 @@ class DenonDiracEffectiveSensor(DenonTelnetEntity, BinarySensorEntity):
 
     @override
     def _handle_event(self, event: str, parameter: str) -> bool:
-        return event == "MS" or parameter.startswith("DIRAC")
+        return event in ("MS", "PW", "ZM") or parameter.startswith("DIRAC")
 
     @property
     @override
     def is_on(self) -> bool | None:
+        if self._receiver.power is not None and self._receiver.power != "ON":
+            return False  # standby: nothing is playing through Dirac
         return dirac_effective(self._receiver.dirac.dirac_filter, self._receiver.sound_mode_raw)
 
     @property
