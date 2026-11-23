@@ -111,6 +111,9 @@
       },
       "speaker_distance": {
         "name": "{channel} etäisyys"
+      },
+      "speaker_delay": {
+        "name": "{channel} viive"
       }
     },
     "binary_sensor": {

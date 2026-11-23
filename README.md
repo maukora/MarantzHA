@@ -48,7 +48,9 @@ option must be on for the Dirac select.
 | `select.av_20_display_dimmer` | Front display brightness | `DIM` |
 | `select.av_20_speaker_preset` | Speaker preset 1/2 (changes what you hear) | `SPPR` |
 | `binary_sensor.av_20_setup_menu_open` | Setup menu open on screen | `MNMEN` |
-| `sensor.av_20_<speaker>_level` / `_distance` | Per-speaker channel level (dB) and distance (m), one pair per configured speaker; Dirac stores these per filter | `SSLEV*`, `SSSDE*` |
+| `sensor.av_20_<speaker>_level` | Per-speaker channel level (dB), one per configured speaker; Dirac stores these per filter | `SSLEV*` |
+| `sensor.av_20_<speaker>_delay` | Per-speaker Dirac delay (ms) while a Dirac filter is active, with a `relative_acoustic_distance_m` attribute (extra distance vs the acoustically closest speaker) | `SSSDE*` + `SSSDESTP 01S` |
+| `sensor.av_20_<speaker>_distance` | Per-speaker distance (m) while Dirac is Off | `SSSDE*` + `SSSDESTP 01M` |
 
 The Dirac select falls back to "Slot n" until the receiver pushes the names (e.g. after an input
 change). The receiver has no known query for `SYSDA`/`SYSMI`, so those show "unknown" after an HA

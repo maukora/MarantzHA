@@ -25,12 +25,33 @@ Verified on Markus's AV 20 at 10.1.1.22 from `captures/20261122-2227-first-probe
 | Line | Meaning |
 |---|---|
 | `SSLEVFR 535` … `SSLEV END` | Channel level: 2 digits = whole dB, 3 = tenths, 50 = 0 dB (`535` = +3.5 dB, `46` = −4 dB). Sent for all 33 possible channels. |
-| `SSSDEFL 0121` | Speaker distance in cm (1.21 m). Only for configured speakers, so it tells which speakers exist. `SSSDESW 0000` with a Dirac filter. |
-| `SSSDESTP 01M` / `01S` | Distance step/unit marker: `01M` with Dirac Off, `01S` with a filter (meaning unverified). |
+| `SSSDEFL 0260` / `0121` | Distance **or** delay, depending on the `SSSDESTP` line that ends the block. Only sent for configured speakers, so it tells which speakers exist. |
+| `SSSDESTP 01M` / `01S` | ✅ Unit marker. `01M` (Dirac Off): values are distances in cm (`0260` = 2.60 m). `01S` (Dirac filter): values are **delays in 0.1 ms** (`0121` = 12.1 ms). Verified against the receiver's settings print (16 Nov 2026): sub 0.0 ms, other channels 10.9–13.3 ms, same pattern as the telnet values (sub `0000`, SL largest, heights smallest). |
 | `SS2DSSDEFL 0121`, `SS2DSCLVFL 52` | Same for FL/FR in a second ("2DS") block, probably the 2-channel/Direct set. Not used yet. |
 | `SSTTL*` | Test tone levels. Not used. |
 
+Dirac delays: the sub is the 0 ms reference (its own latency), so the common ~12 ms offset is not
+distance. Only the differences matter: a larger delay = acoustically closer, 1 ms ≈ 0.343 m. HA shows
+this as `relative_acoustic_distance_m` on the delay sensors (vs the channel with the largest delay,
+subs left out).
+
 Crossovers / speaker sizes: not seen. Queries to try in the second probe (`--set speakers`).
+Expected values from Markus's settings print (16 Nov 2026), to decode the probe's replies:
+
+| Setting | Value |
+|---|---|
+| Front | Full Range |
+| Center | 60 Hz |
+| Surround | 100 Hz |
+| Surround Back | 70 Hz |
+| Heights | 100 Hz |
+| Subwoofer output | LFE + Main |
+| LFE LPF | 80 Hz |
+| Bass Extraction LPF | 80 Hz (multichannel) / 40 Hz (2ch) |
+| Subwoofer level adjust | −3.5 dB (set by Dirac) |
+
+Note: these are from before the 20 Nov changes (new sub position and Dirac run), so the crossovers may
+have changed since.
 
 ## Signal / format info ✅ (all pushed as events)
 | Line | Meaning |

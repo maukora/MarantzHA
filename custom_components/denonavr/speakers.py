@@ -7,8 +7,12 @@ a full dump (Dirac stores levels and distances per filter):
     SSLEVFR 535       -> +3.5 dB
     ...
     SSLEV END
-    SSSDESTP 01S      distance step/unit (01M with Dirac off, 01S with a filter)
-    SSSDEFL 0121      distance in cm -> 1.21 m (only for configured speakers)
+    SSSDEFL 0121      distance/delay for configured speakers only, then
+    SSSDESTP 01S      the unit of those values:
+                        01M (Dirac Off): distance in cm   -> 1.21 m
+                        01S (Dirac filter): delay in 0.1 ms -> 12.1 ms
+                      (matches the delays in the receiver's settings print:
+                       subwoofer 0 ms, other channels 11-13 ms)
 
 Levels are sent for every possible channel, distances only for the speakers
 that are set up, so the distance lines decide which speakers get entities.
@@ -21,6 +25,7 @@ from dataclasses import dataclass
 
 LEVEL = "level"
 DISTANCE = "distance"
+DELAY = "delay"
 DISTANCE_STEP = "distance_step"
 
 CHANNEL_NAMES = {
@@ -86,11 +91,60 @@ def parse_level(value: str) -> float | None:
     return None
 
 
-def parse_distance(value: str) -> float | None:
-    """Convert a distance code to metres: "0121" -> 1.21."""
+SPEED_OF_SOUND_M_PER_MS = 0.343
+
+
+def parse_distance(value: str) -> int | None:
+    """Return the raw distance/delay number: "0121" -> 121."""
     if not value.isdigit():
         return None
-    return int(value) / 100
+    return int(value)
+
+
+def is_delay_step(step: str | None) -> bool | None:
+    """True if SSSDESTP says the values are delays, False for distances."""
+    if not step:
+        return None
+    unit = step.strip()[-1:].upper()
+    if unit == "S":
+        return True
+    if unit == "M":
+        return False
+    return None
+
+
+def distance_m(raw: int | None, step: str | None) -> float | None:
+    """Distance in metres, or None when the values are delays (or unknown)."""
+    if raw is None or is_delay_step(step) is not False:
+        return None
+    return raw / 100
+
+
+def delay_ms(raw: int | None, step: str | None) -> float | None:
+    """Delay in ms, or None when the values are distances (or unknown)."""
+    if raw is None or is_delay_step(step) is not True:
+        return None
+    return raw / 10
+
+
+def is_subwoofer(channel: str) -> bool:
+    """Return True for SW, SW2..SW4."""
+    return channel.startswith("SW")
+
+
+def relative_distances(delays: dict[str, float]) -> dict[str, float]:
+    """Extra acoustic distance (m) of each speaker vs the closest one.
+
+    A larger delay means the speaker is acoustically closer. Subwoofers are
+    left out: their delay is dominated by processing latency.
+    """
+    speakers = {ch: d for ch, d in delays.items() if not is_subwoofer(ch)}
+    if not speakers:
+        return {}
+    closest = max(speakers.values())
+    return {
+        ch: round((closest - d) * SPEED_OF_SOUND_M_PER_MS, 2) for ch, d in speakers.items()
+    }
 
 
 def parse_speaker(event: str, parameter: str) -> SpeakerValue | None:
