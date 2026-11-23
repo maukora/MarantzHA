@@ -1,7 +1,7 @@
 """Support for Denon AVR receivers using their HTTP interface."""
 
 from collections.abc import Awaitable, Callable, Coroutine
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import wraps
 import logging
 from typing import Any, Concatenate, override
@@ -36,11 +36,13 @@ from homeassistant.components.media_player import (
     MediaType,
 )
 from homeassistant.const import CONF_HOST, CONF_MODEL, CONF_TYPE
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, EventStateChangedData, HomeAssistant, State, callback
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import DenonavrConfigEntry
+from . import DenonavrConfigEntry, heos_mirror
 from .const import (
     ATTR_DYNAMIC_EQ,
     CONF_MANUFACTURER,
@@ -255,6 +257,15 @@ class DenonDevice(MediaPlayerEntity):
         self._attr_sound_mode_list = receiver.sound_mode_list
         self._receiver = receiver
         self._update_audyssey = update_audyssey
+        # Only the main zone shows what HEOS plays.
+        self._heos_serial = (
+            heos_mirror.serial_from_entry(
+                config_entry.data.get(CONF_SERIAL_NUMBER), config_entry.unique_id
+            )
+            if receiver.zone == "Main"
+            else None
+        )
+        self._heos_entity_id: str | None = None
 
         self._supported_features_base = SUPPORT_DENON
         self._supported_features_base |= (
@@ -285,6 +296,36 @@ class DenonDevice(MediaPlayerEntity):
     async def async_added_to_hass(self) -> None:
         """Register for telnet events."""
         self._receiver.register_callback(ALL_TELNET_EVENTS, self._telnet_callback)
+        if self._receiver.zone == "Main":
+            # HEOS may load after this integration, so look once HA has started.
+            self.async_on_remove(async_at_started(self.hass, self._async_link_heos))
+
+    async def _async_link_heos(self, _hass: HomeAssistant) -> None:
+        """Follow the HEOS player of this receiver, if there is one."""
+        entity_id = heos_mirror.find_heos_entity(
+            self.hass, self._heos_serial, self._receiver.name
+        )
+        if entity_id is None:
+            return
+        self._heos_entity_id = entity_id
+        self.async_on_remove(
+            async_track_state_change_event(self.hass, entity_id, self._heos_changed)
+        )
+        self.async_write_ha_state()
+
+    @callback
+    def _heos_changed(self, _event: Event[EventStateChangedData]) -> None:
+        self.async_write_ha_state()
+
+    def _heos(self) -> State | None:
+        """HEOS state to show instead of the receiver's own media info."""
+        if self._heos_entity_id is None:
+            return None
+        return heos_mirror.mirror_state(
+            self.hass.states.get(self._heos_entity_id),
+            self._receiver.input_func,
+            self._receiver.power == POWER_ON,
+        )
 
     @override
     async def async_will_remove_from_hass(self) -> None:
@@ -310,6 +351,8 @@ class DenonDevice(MediaPlayerEntity):
     @override
     def state(self) -> MediaPlayerState | None:
         """Return the state of the device."""
+        if (heos := self._heos()) is not None:
+            return MediaPlayerState(heos.state)
         return DENON_STATE_MAPPING.get(self._receiver.state)
 
     @property
@@ -358,6 +401,8 @@ class DenonDevice(MediaPlayerEntity):
     @override
     def media_content_type(self) -> MediaType:
         """Content type of current playing media."""
+        if self._heos() is not None:
+            return MediaType.MUSIC
         if self._receiver.state in {MediaPlayerState.PLAYING, MediaPlayerState.PAUSED}:
             return MediaType.MUSIC
         return MediaType.CHANNEL
@@ -366,6 +411,8 @@ class DenonDevice(MediaPlayerEntity):
     @override
     def media_image_url(self) -> str | None:
         """Image url of current playing media."""
+        if (heos := self._heos()) is not None:
+            return heos_mirror.image_url(heos)
         if self._receiver.input_func in self._receiver.playing_func_list:
             return self._receiver.image_url
         return None
@@ -374,6 +421,8 @@ class DenonDevice(MediaPlayerEntity):
     @override
     def media_title(self) -> str | None:
         """Title of current playing media."""
+        if (heos := self._heos()) is not None:
+            return heos_mirror.attr(heos, "media_title")
         if self._receiver.input_func not in self._receiver.playing_func_list:
             return self._receiver.input_func
         if self._receiver.title is not None:
@@ -384,6 +433,8 @@ class DenonDevice(MediaPlayerEntity):
     @override
     def media_artist(self) -> str | None:
         """Artist of current playing media, music track only."""
+        if (heos := self._heos()) is not None:
+            return heos_mirror.attr(heos, "media_artist")
         if self._receiver.artist is not None:
             return self._receiver.artist
         return self._receiver.band
@@ -392,9 +443,35 @@ class DenonDevice(MediaPlayerEntity):
     @override
     def media_album_name(self) -> str | None:
         """Album name of current playing media, music track only."""
+        if (heos := self._heos()) is not None:
+            return heos_mirror.attr(heos, "media_album_name")
         if self._receiver.album is not None:
             return self._receiver.album
         return self._receiver.station
+
+    @property
+    @override
+    def media_duration(self) -> int | None:
+        """Track length in seconds, from HEOS."""
+        if (heos := self._heos()) is not None:
+            return heos_mirror.attr(heos, "media_duration")
+        return None
+
+    @property
+    @override
+    def media_position(self) -> int | None:
+        """Track position in seconds, from HEOS."""
+        if (heos := self._heos()) is not None:
+            return heos_mirror.attr(heos, "media_position")
+        return None
+
+    @property
+    @override
+    def media_position_updated_at(self) -> datetime | None:
+        """When the HEOS track position was last updated."""
+        if (heos := self._heos()) is not None:
+            return heos_mirror.position_updated_at(heos)
+        return None
 
     @property
     @override
@@ -410,6 +487,8 @@ class DenonDevice(MediaPlayerEntity):
             state_attributes[ATTR_SOUND_MODE_RAW] = sound_mode_raw
         if (dynamic_eq := receiver.dynamic_eq) is not None:
             state_attributes[ATTR_DYNAMIC_EQ] = dynamic_eq
+        if self._heos_entity_id is not None:
+            state_attributes["heos_entity_id"] = self._heos_entity_id
         return state_attributes
 
     @property

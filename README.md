@@ -33,6 +33,12 @@ a copy of HA **2026.11.2**: after an HA update, refresh it from the new core ver
 (or uninstall it in HACS to go back to the built-in one). The integration's "Use Telnet connection"
 option must be on for the Dirac select.
 
+### HEOS track info on the AV 20 player
+When the core HEOS integration is set up, `media_player.av_20` shows what HEOS is playing (cover art,
+title, artist, album, track position) while a HEOS/network input is selected. The HEOS player is found
+by the receiver's serial number (attribute `heos_entity_id`). Nothing extra connects to the receiver:
+the data comes from the HEOS entity in HA.
+
 ### Entities added (all push-updated over telnet; need "Use Telnet connection")
 | Entity | What it shows | From |
 |---|---|---|
