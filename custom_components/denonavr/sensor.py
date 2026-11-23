@@ -25,6 +25,7 @@ from .av_status import (
 from .const import CONF_USE_TELNET, DEFAULT_USE_TELNET
 from .entity import DenonTelnetEntity
 from .speaker_sensor import SpeakerHub
+from .speakers import SPEAKER_QUERY
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,7 +53,8 @@ async def async_setup_entry(
         ]
     )
 
-    SpeakerHub(hass, receiver, config_entry, async_add_entities).async_start()
+    hub = SpeakerHub(hass, receiver, config_entry, async_add_entities)
+    hub.async_start()
 
     async def _initial_queries() -> None:
         # Read-only "?" queries over the integration's own telnet connection.
@@ -60,6 +62,10 @@ async def async_setup_entry(
             return
         try:
             await receiver.async_send_telnet_commands(*INITIAL_QUERIES)
+            # Speaker delays/distances are only pushed when they change, so
+            # ask once. The answer lists every channel, configured or not.
+            hub.expect_query()
+            await receiver.async_send_telnet_commands(SPEAKER_QUERY)
         except DenonAvrError as err:
             _LOGGER.debug("Initial signal queries failed: %s", err)
 

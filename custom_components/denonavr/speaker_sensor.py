@@ -11,6 +11,7 @@ from homeassistant.const import EntityCategory, UnitOfLength, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.event import async_call_later
 
 from denonavr import DenonAVR
 
@@ -19,6 +20,7 @@ from .entity import DenonTelnetEntity
 from .speakers import (
     DELAY,
     DISTANCE,
+    DISTANCE_END,
     DISTANCE_STEP,
     LEVEL,
     channel_name,
@@ -33,6 +35,10 @@ UNIQUE_ID_MARK = "-speaker_"
 KINDS = (LEVEL, DELAY, DISTANCE)
 ATTR_RAW = "raw_value"
 ATTR_STEP = "distance_step"
+# Defaults the receiver reports for channels that aren't set up. 2026.11.2.6
+# created sensors for them from a query answer; these are removed again.
+UNCONFIGURED_DEFAULTS = {300, 360}
+QUERY_TIMEOUT = 15  # seconds
 
 
 def _unique_suffix(kind: str, channel: str) -> str:
@@ -63,6 +69,7 @@ class SpeakerHub:
         self.levels: dict[str, float] = {}
         self.raw_distances: dict[str, int] = {}
         self.distance_step: str | None = None
+        self._query_pending = False
         self._entities: dict[tuple[str, str], SpeakerSensor] = {}
 
     @callback
@@ -97,8 +104,29 @@ class SpeakerHub:
         delays = {ch: d for ch in self.raw_distances if (d := self.delay(ch)) is not None}
         return relative_distances(delays)
 
+    @callback
+    def expect_query(self) -> None:
+        """The next SSSDE block answers a query: don't add speakers from it."""
+        self._query_pending = True
+
+        @callback
+        def _give_up(_now: Any) -> None:
+            self._query_pending = False
+
+        # In case the answer never comes.
+        self._entry.async_on_unload(async_call_later(self._hass, QUERY_TIMEOUT, _give_up))
+
     def seed(self, channel: str, raw: int, step: str) -> None:
         """Use values saved before a restart until the receiver sends new ones."""
+        if step.endswith("S") and raw in UNCONFIGURED_DEFAULTS:
+            # A channel that isn't set up (see UNCONFIGURED_DEFAULTS). Remove
+            # its sensors once they have finished being added.
+            @callback
+            def _remove(_now: Any) -> None:
+                self._remove_speaker(channel)
+
+            self._entry.async_on_unload(async_call_later(self._hass, 5, _remove))
+            return
         if self.distance_step is None:
             self.distance_step = step
         if step == self.distance_step and channel not in self.raw_distances:
@@ -116,6 +144,17 @@ class SpeakerHub:
         if new:
             self._add(new)
 
+    @callback
+    def _remove_speaker(self, channel: str) -> None:
+        registry = er.async_get(self._hass)
+        for kind in KINDS:
+            if (entity := self._entities.pop((kind, channel), None)) is None:
+                continue
+            if entity.entity_id and registry.async_get(entity.entity_id):
+                registry.async_remove(entity.entity_id)
+        self.raw_distances.pop(channel, None)
+        self.levels.pop(channel, None)
+
     def _write(self, kinds: tuple[str, ...], channel: str | None = None) -> None:
         for (kind, ch), entity in self._entities.items():
             if kind in kinds and (channel is None or ch == channel) and entity.hass is not None:
@@ -127,9 +166,13 @@ class SpeakerHub:
         parsed = parse_speaker(event, parameter)
         if parsed is None:
             return
+        if parsed.kind == DISTANCE_END:
+            self._query_pending = False
+            return
         if parsed.kind == DISTANCE_STEP:
             # End of the block: units are known now, and relative distances
             # depend on every speaker, so refresh all of them.
+            self._query_pending = False
             self.distance_step = str(parsed.value)
             self._write((DELAY, DISTANCE))
             return
@@ -139,10 +182,13 @@ class SpeakerHub:
             self.levels[channel] = parsed.value
             self._write((LEVEL,), channel)
             return
-        self.raw_distances[channel] = parsed.value
         if (DISTANCE, channel) not in self._entities:
+            if self._query_pending:
+                return  # query answers include speakers that aren't set up
+            self.raw_distances[channel] = parsed.value
             self._add_speaker(channel)
         else:
+            self.raw_distances[channel] = parsed.value
             self._write((DELAY, DISTANCE), channel)
 
 
