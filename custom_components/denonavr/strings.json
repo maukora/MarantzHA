@@ -129,6 +129,9 @@
       },
       "input_channels": {
         "name": "Input channels"
+      },
+      "speaker_layout": {
+        "name": "Speaker layout"
       }
     },
     "binary_sensor": {

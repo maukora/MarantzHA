@@ -67,6 +67,9 @@
       },
       "input_channels": {
         "default": "mdi:surround-sound"
+      },
+      "speaker_layout": {
+        "default": "mdi:surround-sound"
       }
     },
     "binary_sensor": {

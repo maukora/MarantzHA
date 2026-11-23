@@ -251,3 +251,45 @@ async def test_unconfigured_speakers_from_old_version_removed(
         assert registry.async_get(f"sensor.av_20_top_front_left_{kind}") is None
         assert hass.states.get(f"sensor.av_20_top_front_left_{kind}") is None
     assert registry.async_get("sensor.av_20_front_left_level") is not None
+
+
+async def test_speaker_layout(hass: HomeAssistant, receiver: FakeReceiver):
+    await setup(hass, receiver, make_entry())
+    finish_startup_query(receiver)
+    assert hass.states.get("sensor.av_20_speaker_layout").state == "unknown"
+
+    replay_until_second_dump(receiver)
+    receiver.push("OPINFASP 22121111011000011000000000000000")
+    await hass.async_block_till_done()
+
+    layout = hass.states.get("sensor.av_20_speaker_layout")
+    # Markus's AV 20: 7 ear-level, 4 subwoofer outputs, 4 heights.
+    assert layout.state == "7.4.4"
+    speakers = {s["channel"]: s for s in layout.attributes["speakers"]}
+    assert list(speakers)[:3] == ["FL", "FR", "C"]
+    assert layout.attributes["speaker_count"] == 15
+    fl = speakers["FL"]
+    assert fl["group"] == "front"
+    assert fl["azimuth"] == -30 and fl["x"] == -0.5 and fl["y"] == 0.87
+    assert fl["playing"] is True
+    assert fl["level_db"] == 2.0
+    assert fl["delay_ms"] == 12.1
+    assert fl["relative_distance_m"] == 0.34
+    assert speakers["C"]["playing"] is False
+    assert speakers["SW2"]["playing"] is True  # all subs share one digit
+    assert speakers["FHL"]["group"] == "height"
+    assert speakers["FHL"]["playing"] is False
+    assert layout.attributes["playing_count"] == 6  # FL, FR + 4 sub outputs
+
+
+def test_layout_names():
+    from custom_components.denonavr.layout import layout_name, playing_channels
+
+    assert layout_name({"FL", "FR", "C", "SL", "SR", "SW"}) == "5.1"
+    assert layout_name({"FL", "FR", "C", "SL", "SR", "SBL", "SBR", "SW",
+                        "FHL", "FHR", "RHL", "RHR"}) == "7.1.4"
+    assert layout_name(set()) is None
+    assert playing_channels("22222222022000022000000000000000") == {
+        "FL", "FR", "C", "SW", "SW2", "SW3", "SW4", "SL", "SR", "SBL", "SBR",
+        "FHL", "FHR", "RHL", "RHR",
+    }

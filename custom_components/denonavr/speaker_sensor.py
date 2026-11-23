@@ -5,6 +5,7 @@ from typing import Any, override
 from homeassistant.components.sensor import (
     RestoreSensor,
     SensorDeviceClass,
+    SensorEntity,
     SensorStateClass,
 )
 from homeassistant.const import EntityCategory, UnitOfLength, UnitOfTime
@@ -12,11 +13,14 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from denonavr import DenonAVR
 
 from . import DenonavrConfigEntry
+from .audio_settings import ACTIVE_SPEAKERS, parse_setting
 from .entity import DenonTelnetEntity
+from .layout import layout_name, speaker_list
 from .speakers import (
     DELAY,
     DISTANCE,
@@ -72,6 +76,7 @@ class SpeakerHub:
         self.distance_step: str | None = None
         self._query_pending = False
         self._entities: dict[tuple[str, str], SpeakerSensor] = {}
+        self.layout = SpeakerLayoutSensor(self, receiver, config_entry)
 
     @callback
     def async_start(self) -> None:
@@ -85,6 +90,7 @@ class SpeakerHub:
             kind, _, channel = suffix.partition("_")
             if kind in KINDS and channel:
                 channels.add(channel.upper())
+        self._add([self.layout])
         for channel in sorted(channels):
             self._add_speaker(channel)
         self._receiver.register_callback("SS", self._callback)
@@ -144,6 +150,8 @@ class SpeakerHub:
                 new.append(entity)
         if new:
             self._add(new)
+            if self.layout.hass is not None:
+                self.layout.async_write_ha_state()
 
     @callback
     def _remove_speaker(self, channel: str) -> None:
@@ -155,6 +163,8 @@ class SpeakerHub:
                 registry.async_remove(entity.entity_id)
         self.raw_distances.pop(channel, None)
         self.levels.pop(channel, None)
+        if self.layout.hass is not None:
+            self.layout.async_write_ha_state()
 
     def applies(self, kind: str) -> bool:
         """Whether delay/distance sensors mean anything in the current mode.
@@ -182,11 +192,17 @@ class SpeakerHub:
         elif entry.hidden_by is er.RegistryEntryHider.INTEGRATION:
             registry.async_update_entity(entity.entity_id, hidden_by=None)
 
+    def channels(self) -> set[str]:
+        """Configured speakers (the ones with sensors)."""
+        return {ch for kind, ch in self._entities if kind == DELAY}
+
     def _write(self, kinds: tuple[str, ...], channel: str | None = None) -> None:
         for (kind, ch), entity in list(self._entities.items()):
             if kind in kinds and (channel is None or ch == channel) and entity.hass is not None:
                 self._sync_hidden(kind, entity)
                 entity.async_write_ha_state()
+        if self.layout.hass is not None:
+            self.layout.async_write_ha_state()
 
     def _callback(self, zone: str, event: str, parameter: str) -> None:
         if zone != self._receiver.zone:
@@ -311,3 +327,61 @@ class SpeakerSensor(DenonTelnetEntity, RestoreSensor):
             if relative is not None:
                 attrs["relative_acoustic_distance_m"] = relative
         return attrs
+
+
+class SpeakerLayoutSensor(DenonTelnetEntity, RestoreEntity, SensorEntity):
+    """Speaker layout like "7.1.4", with every configured speaker as attributes.
+
+    Meant for dashboards: each speaker has its role, a nominal position
+    (azimuth/elevation and x/y), whether it plays right now (OPINFASP) and
+    its level and delay.
+    """
+
+    _telnet_events = ("OP",)
+    # Keep the recorder database small; the list changes with every level.
+    _unrecorded_attributes = frozenset({"speakers"})
+
+    def __init__(
+        self, hub: SpeakerHub, receiver: DenonAVR, config_entry: DenonavrConfigEntry
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(receiver, config_entry, "speaker_layout")
+        self._hub = hub
+        self._pattern: str | None = None
+
+    @override
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_state()) is not None:
+            pattern = last.attributes.get("active_pattern")
+            self._pattern = pattern if isinstance(pattern, str) else None
+
+    @override
+    def _handle_event(self, event: str, parameter: str) -> bool:
+        parsed = parse_setting(event, parameter)
+        if parsed is None or parsed[0] != ACTIVE_SPEAKERS or parsed[1] == self._pattern:
+            return False
+        self._pattern = str(parsed[1])
+        return True
+
+    @property
+    @override
+    def native_value(self) -> str | None:
+        return layout_name(self._hub.channels())
+
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, Any]:
+        hub = self._hub
+        channels = hub.channels()
+        delays = {ch: d for ch in channels if (d := hub.delay(ch)) is not None}
+        distances = {ch: d for ch in channels if (d := hub.distance(ch)) is not None}
+        speakers = speaker_list(
+            channels, hub.levels, delays, hub.relative_distances(), distances, self._pattern
+        )
+        return {
+            "speakers": speakers,
+            "speaker_count": len(speakers),
+            "playing_count": sum(1 for s in speakers if s["playing"]),
+            "active_pattern": self._pattern,
+        }
