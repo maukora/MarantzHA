@@ -31,6 +31,8 @@ from .speakers import (
 
 UNIQUE_ID_MARK = "-speaker_"
 KINDS = (LEVEL, DELAY, DISTANCE)
+ATTR_RAW = "raw_value"
+ATTR_STEP = "distance_step"
 
 
 def _unique_suffix(kind: str, channel: str) -> str:
@@ -94,6 +96,15 @@ class SpeakerHub:
         """Extra acoustic distance vs the closest speaker, from the delays."""
         delays = {ch: d for ch in self.raw_distances if (d := self.delay(ch)) is not None}
         return relative_distances(delays)
+
+    def seed(self, channel: str, raw: int, step: str) -> None:
+        """Use values saved before a restart until the receiver sends new ones."""
+        if self.distance_step is None:
+            self.distance_step = step
+        if step == self.distance_step and channel not in self.raw_distances:
+            self.raw_distances[channel] = raw
+            # Relative distances depend on every speaker: refresh them all.
+            self._write((DELAY, DISTANCE))
 
     def _add_speaker(self, channel: str) -> None:
         new = []
@@ -172,11 +183,22 @@ class SpeakerSensor(DenonTelnetEntity, RestoreSensor):
 
     @override
     async def async_added_to_hass(self) -> None:
-        # The hub owns the telnet callback; only restore the last value here.
+        # The hub owns the telnet callback; only restore the last values here.
         await super().async_added_to_hass()
-        if (last := await self.async_get_last_sensor_data()) is not None:
-            value = last.native_value
-            self._restored = float(value) if isinstance(value, (int, float)) else None
+        if self._kind == LEVEL:
+            if (last := await self.async_get_last_sensor_data()) is not None:
+                value = last.native_value
+                self._restored = float(value) if isinstance(value, (int, float)) else None
+            return
+        # Delay/distance: restore the raw number and its unit, so the value is
+        # never shown in the wrong unit. States saved by older versions lack
+        # them and are dropped.
+        if (state := await self.async_get_last_state()) is None:
+            return
+        raw = state.attributes.get(ATTR_RAW)
+        step = state.attributes.get(ATTR_STEP)
+        if isinstance(raw, int) and isinstance(step, str):
+            self._hub.seed(self._channel, raw, step)
 
     def _live_value(self) -> float | None:
         if self._kind == LEVEL:
@@ -185,16 +207,11 @@ class SpeakerSensor(DenonTelnetEntity, RestoreSensor):
             return self._hub.delay(self._channel)
         return self._hub.distance(self._channel)
 
-    def _has_live_data(self) -> bool:
-        if self._kind == LEVEL:
-            return self._channel in self._hub.levels
-        return self._channel in self._hub.raw_distances and self._hub.distance_step is not None
-
     @property
     @override
     def native_value(self) -> float | None:
-        # Until the receiver sends this speaker's values, show the last ones.
-        if not self._has_live_data():
+        # Until the receiver sends this speaker's level, show the last one.
+        if self._kind == LEVEL and self._channel not in self._hub.levels:
             return self._restored
         return self._live_value()
 
@@ -202,6 +219,13 @@ class SpeakerSensor(DenonTelnetEntity, RestoreSensor):
     @override
     def extra_state_attributes(self) -> dict[str, Any]:
         attrs: dict[str, Any] = {"channel": self._channel}
+        if self._kind == LEVEL:
+            return attrs
+        if (raw := self._hub.raw_distances.get(self._channel)) is not None and (
+            step := self._hub.distance_step
+        ) is not None:
+            attrs[ATTR_RAW] = raw
+            attrs[ATTR_STEP] = step
         if self._kind == DELAY and not is_subwoofer(self._channel):
             relative = self._hub.relative_distances().get(self._channel)
             if relative is not None:
