@@ -3,7 +3,7 @@
 import logging
 
 from denonavr import DenonAVR
-from denonavr.exceptions import AvrRequestError
+from denonavr.exceptions import AvrRequestError, DenonAvrError
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, EVENT_HOMEASSISTANT_STOP, Platform
@@ -27,6 +27,7 @@ from .const import (
     DEFAULT_ZONE3,
     DOMAIN,
 )
+from .audio_settings import SETTINGS_QUERIES
 from .receiver import ConnectDenonAVR
 from .services import async_setup_services
 
@@ -34,8 +35,10 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 PLATFORMS = [
     Platform.BINARY_SENSOR,
     Platform.MEDIA_PLAYER,
+    Platform.NUMBER,
     Platform.SELECT,
     Platform.SENSOR,
+    Platform.SWITCH,
 ]
 
 _LOGGER = logging.getLogger(__name__)
@@ -86,6 +89,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: DenonavrConfigEntry) -> 
         )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    if use_telnet:
+        # Read-only queries for the audio settings, now that the entities listen.
+        async def _settings_queries() -> None:
+            if not receiver.telnet_connected:
+                return
+            try:
+                await receiver.async_send_telnet_commands(*SETTINGS_QUERIES)
+            except DenonAvrError as err:
+                _LOGGER.debug("Settings queries failed: %s", err)
+
+        entry.async_create_background_task(
+            hass, _settings_queries(), "denonavr settings queries"
+        )
 
 
 async def async_unload_entry(

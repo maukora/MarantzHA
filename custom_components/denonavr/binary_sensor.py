@@ -10,9 +10,11 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from denonavr import DenonAVR
 
 from . import DenonavrConfigEntry
+from .audio_settings import AUTO_LIP_SYNC
 from .av_status import dirac_effective
 from .const import CONF_USE_TELNET, DEFAULT_USE_TELNET
 from .entity import DenonTelnetEntity
+from .setting_entity import DenonSettingEntity
 
 PARALLEL_UPDATES = 0
 
@@ -30,6 +32,7 @@ async def async_setup_entry(
         [
             DenonDiracEffectiveSensor(receiver, config_entry),
             DenonSetupMenuSensor(receiver, config_entry),
+            DenonAutoLipSyncSensor(receiver, config_entry),
         ]
     )
 
@@ -85,3 +88,18 @@ class DenonSetupMenuSensor(DenonTelnetEntity, BinarySensorEntity):
     @override
     def is_on(self) -> bool | None:
         return self._receiver.settings_menu
+
+
+class DenonAutoLipSyncSensor(DenonSettingEntity, BinarySensorEntity):
+    """Auto lip sync (from the TV over HDMI) on or off."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, receiver: DenonAVR, config_entry: DenonavrConfigEntry) -> None:
+        """Initialize the sensor."""
+        super().__init__(receiver, config_entry, AUTO_LIP_SYNC, ("OP",))
+
+    @property
+    @override
+    def is_on(self) -> bool | None:
+        return self._value

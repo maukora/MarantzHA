@@ -66,7 +66,7 @@ async def test_sensors_created_from_dump(hass: HomeAssistant, receiver: FakeRece
     speaker_ids = [
         e for e in hass.states.async_entity_ids("sensor")
         if e.endswith(("_level", "_distance", "_delay"))
-        and not e.endswith("audio_delay")
+        and not e.endswith(("audio_delay", "lip_sync_delay"))
     ]
     assert len(speaker_ids) == 45
     assert hass.states.get("sensor.av_20_top_front_left_level") is None

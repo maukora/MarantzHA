@@ -18,9 +18,11 @@ from denonavr.const import ALL_ZONES
 from denonavr.exceptions import AvrCommandError, DenonAvrError
 
 from . import DenonavrConfigEntry
+from .audio_settings import DRC, DRC_CODES, DRC_OPTIONS
 from .const import CONF_MANUFACTURER, CONF_USE_TELNET, DEFAULT_USE_TELNET, DOMAIN
 from .dirac_slots import DiracSlotTracker
 from .entity import DenonTelnetEntity
+from .setting_entity import DenonSettingEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,6 +47,7 @@ async def async_setup_entry(
             DenonDiracFilterSelect(receiver, config_entry),
             DenonDimmerSelect(receiver, config_entry),
             DenonSpeakerPresetSelect(receiver, config_entry),
+            DenonDrcSelect(receiver, config_entry),
         ]
     )
 
@@ -196,3 +199,23 @@ class DenonSpeakerPresetSelect(DenonTelnetEntity, SelectEntity):
             await self._receiver.async_speaker_preset(int(option))
         except (AvrCommandError, DenonAvrError, ValueError) as err:
             raise HomeAssistantError(f"Could not set speaker preset: {err}") from err
+
+
+class DenonDrcSelect(DenonSettingEntity, SelectEntity):
+    """Dynamic range compression (PSDRC)."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, receiver: DenonAVR, config_entry: DenonavrConfigEntry) -> None:
+        """Initialize the entity."""
+        super().__init__(receiver, config_entry, DRC, ("PS",))
+        self._attr_options = list(DRC_OPTIONS.values())
+
+    @property
+    @override
+    def current_option(self) -> str | None:
+        return self._value
+
+    @override
+    async def async_select_option(self, option: str) -> None:
+        await self._async_send(f"PSDRC {DRC_CODES[option]}")

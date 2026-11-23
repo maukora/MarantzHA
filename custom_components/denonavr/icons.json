@@ -20,6 +20,9 @@
       },
       "speaker_preset": {
         "default": "mdi:speaker-multiple"
+      },
+      "drc": {
+        "default": "mdi:arrow-collapse-vertical"
       }
     },
     "sensor": {
@@ -55,6 +58,15 @@
       },
       "input_source": {
         "default": "mdi:import"
+      },
+      "auto_lip_sync_value": {
+        "default": "mdi:timer-sync-outline"
+      },
+      "active_speakers": {
+        "default": "mdi:speaker-multiple"
+      },
+      "input_channels": {
+        "default": "mdi:surround-sound"
       }
     },
     "binary_sensor": {
@@ -63,6 +75,31 @@
       },
       "setup_menu": {
         "default": "mdi:menu"
+      },
+      "auto_lip_sync": {
+        "default": "mdi:sync"
+      }
+    },
+    "number": {
+      "subwoofer_level": {
+        "default": "mdi:speaker"
+      },
+      "lfe_level": {
+        "default": "mdi:waveform"
+      },
+      "bass": {
+        "default": "mdi:music-clef-bass"
+      },
+      "treble": {
+        "default": "mdi:music-clef-treble"
+      },
+      "channel_volume": {
+        "default": "mdi:tune-vertical"
+      }
+    },
+    "switch": {
+      "tone_control": {
+        "default": "mdi:tune"
       }
     }
   }

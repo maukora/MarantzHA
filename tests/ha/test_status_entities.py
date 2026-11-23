@@ -112,5 +112,5 @@ async def test_dimmer_and_preset(hass: HomeAssistant, receiver: FakeReceiver):
 
 async def test_no_entities_without_telnet(hass: HomeAssistant, receiver: FakeReceiver):
     await setup(hass, receiver, make_entry(use_telnet=False))
-    assert hass.states.async_entity_ids(("sensor", "binary_sensor", "select")) == []
+    assert hass.states.async_entity_ids(("sensor", "binary_sensor", "select", "number", "switch")) == []
     receiver.async_send_telnet_commands.assert_not_awaited()

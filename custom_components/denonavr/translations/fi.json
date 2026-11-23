@@ -82,6 +82,9 @@
       },
       "speaker_preset": {
         "name": "Kaiutinesiasetus"
+      },
+      "drc": {
+        "name": "Dynamiikan kompressio"
       }
     },
     "sensor": {
@@ -117,6 +120,15 @@
       },
       "input_source": {
         "name": "Tulolähde"
+      },
+      "auto_lip_sync_value": {
+        "name": "Huulisynkronoinnin viive"
+      },
+      "active_speakers": {
+        "name": "Aktiiviset kaiuttimet"
+      },
+      "input_channels": {
+        "name": "Tulokanavat"
       }
     },
     "binary_sensor": {
@@ -125,6 +137,31 @@
       },
       "setup_menu": {
         "name": "Asetusvalikko auki"
+      },
+      "auto_lip_sync": {
+        "name": "Automaattinen huulisynkronointi"
+      }
+    },
+    "number": {
+      "subwoofer_level": {
+        "name": "Subwooferin taso"
+      },
+      "lfe_level": {
+        "name": "LFE-taso"
+      },
+      "bass": {
+        "name": "Basso"
+      },
+      "treble": {
+        "name": "Diskantti"
+      },
+      "channel_volume": {
+        "name": "{channel} tasonsäätö"
+      }
+    },
+    "switch": {
+      "tone_control": {
+        "name": "Sävynsäätö"
       }
     }
   }

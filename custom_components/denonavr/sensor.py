@@ -3,7 +3,11 @@
 import logging
 from typing import Any, override
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.const import EntityCategory, UnitOfFrequency, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -12,6 +16,13 @@ from denonavr import DenonAVR
 from denonavr.exceptions import DenonAvrError
 
 from . import DenonavrConfigEntry
+from .audio_settings import (
+    ACTIVE_SPEAKERS,
+    AUTO_LIP_SYNC_VALUE,
+    INPUT_CHANNELS,
+    count_playing,
+    count_set_up,
+)
 from .av_status import (
     DECODED_MODE,
     INITIAL_QUERIES,
@@ -24,6 +35,7 @@ from .av_status import (
 )
 from .const import CONF_USE_TELNET, DEFAULT_USE_TELNET
 from .entity import DenonTelnetEntity
+from .setting_entity import DenonSettingEntity
 from .speaker_sensor import SpeakerHub
 from .speakers import SPEAKER_QUERY
 
@@ -51,6 +63,9 @@ async def async_setup_entry(
             DenonSoundModeRawSensor(receiver, config_entry),
             DenonAudioDelaySensor(receiver, config_entry),
             DenonInputSourceSensor(receiver, config_entry),
+            DenonChannelMapSensor(receiver, config_entry, ACTIVE_SPEAKERS),
+            DenonChannelMapSensor(receiver, config_entry, INPUT_CHANNELS),
+            DenonLipSyncValueSensor(receiver, config_entry),
         ]
     )
 
@@ -194,3 +209,48 @@ class DenonInputSourceSensor(DenonTelnetEntity, SensorEntity):
     @override
     def native_value(self) -> str | None:
         return self._receiver.input_func
+
+
+class DenonChannelMapSensor(DenonSettingEntity, SensorEntity):
+    """How many speakers play (OPINFASP) or input channels are present (OPINFINS).
+
+    The receiver sends one digit per channel (0 = none, 1 = idle, 2 = active);
+    the raw pattern is kept as an attribute.
+    """
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(
+        self, receiver: DenonAVR, config_entry: DenonavrConfigEntry, key: str
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(receiver, config_entry, key, ("OP",))
+
+    @property
+    @override
+    def native_value(self) -> int | None:
+        return None if self._value is None else count_playing(self._value)
+
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, Any]:
+        if self._value is None:
+            return {}
+        return {"pattern": self._value, "channels_available": count_set_up(self._value)}
+
+
+class DenonLipSyncValueSensor(DenonSettingEntity, SensorEntity):
+    """Auto lip sync value the receiver reports (OPALSVAL)."""
+
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.MILLISECONDS
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, receiver: DenonAVR, config_entry: DenonavrConfigEntry) -> None:
+        """Initialize the sensor."""
+        super().__init__(receiver, config_entry, AUTO_LIP_SYNC_VALUE, ("OP",))
+
+    @property
+    @override
+    def native_value(self) -> int | None:
+        return self._value
