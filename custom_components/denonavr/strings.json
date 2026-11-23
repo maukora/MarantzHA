@@ -114,6 +114,9 @@
       },
       "speaker_delay": {
         "name": "{channel} delay"
+      },
+      "input_source": {
+        "name": "Input source"
       }
     },
     "binary_sensor": {

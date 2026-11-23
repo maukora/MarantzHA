@@ -50,6 +50,7 @@ the data comes from the HEOS entity in HA.
 | `sensor.av_20_sample_rate` | Sample rate in kHz | `SSINFAISFSV` |
 | `sensor.av_20_smart_select_group` | Movie / Music / Game | `SSSMG` |
 | `sensor.av_20_sound_mode_raw` | Sound mode as the receiver names it | `MS` |
+| `sensor.av_20_input_source` | Selected input, e.g. "APPLE TV" (also the media player's `source`) | `SI` |
 | `sensor.av_20_audio_delay` | Audio delay in ms (per input) | `PSDELAY` |
 | `select.av_20_display_dimmer` | Front display brightness | `DIM` |
 | `select.av_20_speaker_preset` | Speaker preset 1/2 (changes what you hear) | `SPPR` |

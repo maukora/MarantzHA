@@ -114,6 +114,9 @@
       },
       "speaker_delay": {
         "name": "{channel} viive"
+      },
+      "input_source": {
+        "name": "Tulolähde"
       }
     },
     "binary_sensor": {

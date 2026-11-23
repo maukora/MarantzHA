@@ -52,6 +52,9 @@
       },
       "speaker_delay": {
         "default": "mdi:timer-sand"
+      },
+      "input_source": {
+        "default": "mdi:import"
       }
     },
     "binary_sensor": {

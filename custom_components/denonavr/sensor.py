@@ -50,6 +50,7 @@ async def async_setup_entry(
             DenonStatusSensor(receiver, config_entry, SMART_SELECT_GROUP),
             DenonSoundModeRawSensor(receiver, config_entry),
             DenonAudioDelaySensor(receiver, config_entry),
+            DenonInputSourceSensor(receiver, config_entry),
         ]
     )
 
@@ -170,3 +171,26 @@ class DenonAudioDelaySensor(DenonTelnetEntity, SensorEntity):
     @override
     def native_value(self) -> int | None:
         return self._receiver.delay
+
+
+class DenonInputSourceSensor(DenonTelnetEntity, SensorEntity):
+    """Selected input, e.g. "APPLE TV" (same as the media player's source).
+
+    A sensor of its own so it shows in history, logbook and the device page
+    and is easy to use in automations.
+    """
+
+    _telnet_events = ("SI",)
+
+    def __init__(self, receiver: DenonAVR, config_entry: DenonavrConfigEntry) -> None:
+        """Initialize the sensor."""
+        super().__init__(receiver, config_entry, "input_source")
+
+    @override
+    def _handle_event(self, event: str, parameter: str) -> bool:
+        return True
+
+    @property
+    @override
+    def native_value(self) -> str | None:
+        return self._receiver.input_func

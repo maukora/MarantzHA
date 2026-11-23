@@ -67,6 +67,7 @@ class FakeReceiver:
         self.dimmer: str | None = "Dark"
         self.speaker_preset: int | None = 2
         self.delay: int | None = 162
+        self.input_func: str | None = "TV Audio"
         self.sound_mode_raw: str | None = "DOLBY ATMOS"
         self.settings_menu: bool | None = False
         self.power: str | None = "ON"
@@ -94,6 +95,8 @@ class FakeReceiver:
             self.power = "ON" if line == "ZMON" else "OFF"
         elif line.startswith("MNMEN "):
             self.settings_menu = line[6:] == "ON"
+        elif event == "SI":
+            self.input_func = parameter
         elif event == "MS" and not line.startswith(("MSSMART", "MSQUICK")):
             self.sound_mode_raw = parameter
         zone = "All" if event in {"DIM", "MN", "SY"} else "Main"
