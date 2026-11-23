@@ -2,8 +2,10 @@
 
 from pathlib import Path
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import restore_state as rs
+from pytest_homeassistant_custom_component.common import mock_restore_cache
 
 from ..test_dirac_slots import received_lines
 from .test_select import FakeReceiver, make_entry, setup
@@ -93,3 +95,46 @@ async def test_unload_unregisters_hub(hass: HomeAssistant, receiver: FakeReceive
     assert before > 0
     assert await hass.config_entries.async_unload(entry.entry_id)
     assert receiver.callbacks["SS"] == []
+
+
+async def test_delays_restored_in_their_unit(hass: HomeAssistant, receiver: FakeReceiver):
+    entry = make_entry()
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    ids = {}
+    for kind in ("delay", "distance"):
+        for ch in ("fl", "sl"):
+            object_id = f"av_20_{'front' if ch == 'fl' else 'surround'}_left_{kind}"
+            ids[object_id] = registry.async_get_or_create(
+                "sensor", "denonavr", f"123456789-speaker_{kind}_{ch}", config_entry=entry,
+                suggested_object_id=object_id,
+            ).id
+    mock_restore_cache(
+        hass,
+        [
+            State("sensor.av_20_front_left_delay", "12.1",
+                  {"raw_value": 121, "distance_step": "01S"}),
+            State("sensor.av_20_surround_left_delay", "13.1",
+                  {"raw_value": 131, "distance_step": "01S"}),
+            # Saved by an older version: no unit, so it is not trusted.
+            State("sensor.av_20_front_left_distance", "1.21", {}),
+        ],
+    )
+    data = hass.data[rs.DATA_RESTORE_STATE]
+    if hasattr(data, "last_states_by_entity_registry_id"):
+        data.last_states_by_entity_registry_id = {
+            ids[eid.split(".")[1]]: st for eid, st in data.last_states.items()
+        }
+    await setup(hass, receiver, entry)
+    await hass.async_block_till_done()
+
+    delay = hass.states.get("sensor.av_20_front_left_delay")
+    assert delay.state == "12.1"
+    assert delay.attributes["relative_acoustic_distance_m"] == 0.34
+    assert hass.states.get("sensor.av_20_front_left_distance").state == "unknown"
+
+    # A new dump replaces the restored values.
+    receiver.push("SSSDEFL 0260")
+    receiver.push("SSSDESTP 01M")
+    assert hass.states.get("sensor.av_20_front_left_distance").state == "2.6"
+    assert hass.states.get("sensor.av_20_front_left_delay").state == "unknown"
