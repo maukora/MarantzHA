@@ -27,6 +27,7 @@ from .speakers import (
     DISTANCE_END,
     DISTANCE_STEP,
     LEVEL,
+    SUB_COUNT,
     channel_name,
     delay_ms,
     distance_m,
@@ -34,6 +35,7 @@ from .speakers import (
     is_subwoofer,
     parse_speaker,
     relative_distances,
+    sub_index,
 )
 
 UNIQUE_ID_MARK = "-speaker_"
@@ -74,6 +76,9 @@ class SpeakerHub:
         self.levels: dict[str, float] = {}
         self.raw_distances: dict[str, int] = {}
         self.distance_step: str | None = None
+        # Number of subwoofers from the speaker config (SSSPCSWF). The
+        # SSSDE answers include every sub output, set up or not.
+        self.sub_count: int | None = None
         self._query_pending = False
         self._entities: dict[tuple[str, str], SpeakerSensor] = {}
         self.layout = SpeakerLayoutSensor(self, receiver, config_entry)
@@ -141,7 +146,24 @@ class SpeakerHub:
             # Relative distances depend on every speaker: refresh them all.
             self._write((DELAY, DISTANCE))
 
+    def _extra_sub(self, channel: str) -> bool:
+        """A sub output beyond the configured number of subwoofers."""
+        return self.sub_count is not None and sub_index(channel) > self.sub_count
+
+    @callback
+    def set_sub_count(self, count: int) -> None:
+        """Number of subwoofers is known: drop the sensors for unused outputs."""
+        if count == self.sub_count:
+            return
+        self.sub_count = count
+        for channel in {ch for _, ch in self._entities}:
+            if self._extra_sub(channel):
+                self._remove_speaker(channel)
+        self._write((DELAY, DISTANCE))
+
     def _add_speaker(self, channel: str) -> None:
+        if self._extra_sub(channel):
+            return
         new = []
         for kind in KINDS:
             if (kind, channel) not in self._entities:
@@ -209,6 +231,9 @@ class SpeakerHub:
             return
         parsed = parse_speaker(event, parameter)
         if parsed is None:
+            return
+        if parsed.kind == SUB_COUNT:
+            self.set_sub_count(int(parsed.value))
             return
         if parsed.kind == DISTANCE_END:
             self._query_pending = False
@@ -383,5 +408,6 @@ class SpeakerLayoutSensor(DenonTelnetEntity, RestoreEntity, SensorEntity):
             "speakers": speakers,
             "speaker_count": len(speakers),
             "playing_count": sum(1 for s in speakers if s["playing"]),
+            "subwoofers": hub.sub_count,
             "active_pattern": self._pattern,
         }

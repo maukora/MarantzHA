@@ -31,9 +31,14 @@ DISTANCE = "distance"
 DELAY = "delay"
 DISTANCE_STEP = "distance_step"
 DISTANCE_END = "distance_end"
+SUB_COUNT = "sub_count"
 # Read-only query: answers with SSSDE<ch> for ALL channels (configured or
 # not, unconfigured ones at defaults like 0300/0360), SSSDESTP, SSSDE END.
 SPEAKER_QUERY = "SSSDE ?"
+# Read-only query for the speaker config. Seen on the AV 20 (2026-11-23):
+# SSSPCFRO YES, SSSPCCEN YES, SSSPCSUA YES, SSSPCSBK 2SP, SSSPCFRW NO,
+# SSSPCSWM DRC, SSSPCSWL 2LR, SSSPCSWF 1SP (number of subwoofers).
+SPEAKER_CONFIG_QUERY = "SSSPC ?"
 
 CHANNEL_NAMES = {
     "FL": "Front left",
@@ -139,6 +144,23 @@ def is_subwoofer(channel: str) -> bool:
     return channel.startswith("SW")
 
 
+def sub_index(channel: str) -> int:
+    """SW -> 1, SW2 -> 2, ... (0 for other channels)."""
+    if not is_subwoofer(channel):
+        return 0
+    rest = channel[2:]
+    return int(rest) if rest.isdigit() else 1
+
+
+def parse_sub_count(value: str) -> int | None:
+    """Value of SSSPCSWF: "1SP".."4SP" -> 1..4, "NO" -> 0."""
+    if value == "NO":
+        return 0
+    if len(value) == 3 and value.endswith("SP") and value[0].isdigit():
+        return int(value[0])
+    return None
+
+
 def relative_distances(delays: dict[str, float]) -> dict[str, float]:
     """Extra acoustic distance (m) of each speaker vs the closest one.
 
@@ -163,6 +185,10 @@ def parse_speaker(event: str, parameter: str) -> SpeakerValue | None:
         channel, _, value = param[3:].partition(" ")
         if channel and (level := parse_level(value)) is not None:
             return SpeakerValue(LEVEL, channel, level)
+        return None
+    if param.startswith("SPCSWF "):
+        if (count := parse_sub_count(param[7:])) is not None:
+            return SpeakerValue(SUB_COUNT, None, count)
         return None
     if param == "SDE END":
         return SpeakerValue(DISTANCE_END, None, None)

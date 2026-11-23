@@ -192,6 +192,7 @@ async def test_query_answer_updates_known_speakers_only(
     await setup(hass, receiver, entry)
     # Setup asks for the delays once; the answer follows.
     receiver.async_send_telnet_commands.assert_any_await("SSSDE ?")
+    receiver.async_send_telnet_commands.assert_any_await("SSSPC ?")
     for line in received_lines(QUERY):
         receiver.push(line)
     await hass.async_block_till_done()
@@ -280,6 +281,35 @@ async def test_speaker_layout(hass: HomeAssistant, receiver: FakeReceiver):
     assert speakers["FHL"]["group"] == "height"
     assert speakers["FHL"]["playing"] is False
     assert layout.attributes["playing_count"] == 6  # FL, FR + 4 sub outputs
+    assert layout.attributes["subwoofers"] is None
+
+    # The speaker config says one subwoofer: the unused outputs go away.
+    receiver.push("SSSPCSWF 1SP")
+    await hass.async_block_till_done()
+    layout = hass.states.get("sensor.av_20_speaker_layout")
+    assert layout.state == "7.1.4"
+    assert layout.attributes["subwoofers"] == 1
+    assert layout.attributes["speaker_count"] == 12
+    assert layout.attributes["playing_count"] == 3
+    assert hass.states.get("sensor.av_20_subwoofer_delay") is not None
+    assert hass.states.get("sensor.av_20_subwoofer_2_delay") is None
+    assert er.async_get(hass).async_get("sensor.av_20_subwoofer_3_level") is None
+
+    # Later SSSDE lines for the unused outputs don't bring them back.
+    receiver.push("SSSDESW4 0000")
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.av_20_subwoofer_4_delay") is None
+
+
+def test_sub_count_parsing():
+    from custom_components.denonavr.speakers import SUB_COUNT, parse_line, sub_index
+
+    assert parse_line("SSSPCSWF 1SP").kind == SUB_COUNT
+    assert parse_line("SSSPCSWF 1SP").value == 1
+    assert parse_line("SSSPCSWF NO").value == 0
+    assert parse_line("SSSPCSWL 2LR") is None
+    assert parse_line("SSSPCFRO YES") is None
+    assert [sub_index(c) for c in ("SW", "SW2", "SW4", "FL")] == [1, 2, 4, 0]
 
 
 def test_layout_names():
