@@ -31,4 +31,4 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install pytest
-      - run: pytest tests/test_dirac_slots.py -q
+      - run: pytest tests/test_dirac_slots.py tests/test_av_status.py tests/test_speakers.py tests/test_audio_settings.py -q
