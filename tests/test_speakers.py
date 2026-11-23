@@ -28,9 +28,9 @@ FIRST = ROOT / "captures" / "20261122-2227-first-probe.log"
         ("SSLEVSL 495", "level", "SL", -0.5),
         ("SSLEVSW 46", "level", "SW", -4.0),
         ("SSLEVSW2 485", "level", "SW2", -1.5),
-        ("SSSDEFL 0121", "distance", "FL", 1.21),
-        ("SSSDEFL 0260", "distance", "FL", 2.6),
-        ("SSSDESW 0000", "distance", "SW", 0.0),
+        ("SSSDEFL 0121", "distance", "FL", 121),
+        ("SSSDEFL 0260", "distance", "FL", 260),
+        ("SSSDESW 0000", "distance", "SW", 0),
         ("SSSDESTP 01S", "distance_step", None, "01S"),
     ],
 )
@@ -63,3 +63,32 @@ def test_capture_speakers():
     # Levels for every possible channel; all have a readable name.
     assert len(levels) > len(distances)
     assert all(speakers.channel_name(ch) != ch for ch in levels)
+
+
+@pytest.mark.parametrize(
+    ("raw", "step", "metres", "ms"),
+    [
+        (260, "01M", 2.6, None),  # Dirac Off: cm
+        (121, "01S", None, 12.1),  # Dirac filter: 0.1 ms
+        (0, "01S", None, 0.0),
+        (121, None, None, None),  # unit not known yet
+        (None, "01S", None, None),
+    ],
+)
+def test_units(raw, step, metres, ms):
+    assert speakers.distance_m(raw, step) == metres
+    assert speakers.delay_ms(raw, step) == ms
+
+
+def test_relative_distances_match_dirac_print():
+    # Delays from Markus's settings print (16 Nov 2026, slot 1).
+    delays = {"FL": 12.3, "FR": 12.1, "C": 12.9, "SL": 13.3, "SR": 12.4, "FHR": 10.9, "SW": 0.0}
+    rel = speakers.relative_distances(delays)
+    assert "SW" not in rel
+    assert rel["SL"] == 0.0
+    assert rel["C"] == 0.14
+    assert rel["SR"] == 0.31
+    assert rel["FL"] == 0.34
+    assert rel["FR"] == 0.41
+    assert rel["FHR"] == 0.82
+    assert speakers.relative_distances({"SW": 0.0}) == {}

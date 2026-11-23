@@ -49,6 +49,9 @@
       },
       "speaker_distance": {
         "default": "mdi:ruler"
+      },
+      "speaker_delay": {
+        "default": "mdi:timer-sand"
       }
     },
     "binary_sensor": {

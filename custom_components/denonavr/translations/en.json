@@ -111,6 +111,9 @@
       },
       "speaker_distance": {
         "name": "{channel} distance"
+      },
+      "speaker_delay": {
+        "name": "{channel} delay"
       }
     },
     "binary_sensor": {
