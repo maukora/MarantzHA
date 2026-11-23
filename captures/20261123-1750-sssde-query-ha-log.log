@@ -1,0 +1,41 @@
+# Answer to the read-only "SSSDE ?" query, sent through HA (denonavr.get_command)
+# on 2026-11-23 17:50 (Dirac slot 2 active). Copied from HA's debug log.
+# Note: lists EVERY channel; unconfigured ones report defaults (0300/0360).
+# Before it, the slot 1 -> 2 change pushed SSLEV*/SSTTL* and only "SSSDESTP 01S"
+# (no SSSDE<ch> lines: the delays were unchanged).
+  0.000 << SSSDEFL 0121
+  0.042 << SSSDEFR 0119
+  0.044 << SSSDEC 0127
+  0.045 << SSSDESL 0131
+  0.047 << SSSDESR 0122
+  0.052 << SSSDESW 0000
+  0.061 << SSSDESW2 0000
+  0.070 << SSSDESW3 0000
+  0.078 << SSSDESW4 0000
+  0.090 << SSSDESBL 0120
+  0.100 << SSSDESBR 0120
+  0.143 << SSSDESB 0300
+  0.161 << SSSDEFHL 0108
+  0.163 << SSSDEFHR 0107
+  0.165 << SSSDETFL 0300
+  0.185 << SSSDETFR 0300
+  0.204 << SSSDETML 0300
+  0.224 << SSSDETMR 0300
+  0.247 << SSSDEFDL 0360
+  0.267 << SSSDEFDR 0360
+  0.283 << SSSDESDL 0300
+  0.309 << SSSDESDR 0300
+  0.323 << SSSDEFWL 0360
+  0.338 << SSSDEFWR 0360
+  0.352 << SSSDETRL 0300
+  0.369 << SSSDETRR 0300
+  0.387 << SSSDERHL 0111
+  0.392 << SSSDERHR 0110
+  0.394 << SSSDEBDL 0300
+  0.434 << SSSDEBDR 0300
+  0.449 << SSSDESHL 0300
+  0.472 << SSSDESHR 0300
+  0.487 << SSSDETS 0300
+  0.505 << SSSDECH 0360
+  0.517 << SSSDESTP 01S
+  0.538 << SSSDE END

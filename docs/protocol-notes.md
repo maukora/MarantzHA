@@ -27,8 +27,13 @@ Verified on Markus's AV 20 at 10.1.1.22 from `captures/20261122-2227-first-probe
 | `SSLEVFR 535` … `SSLEV END` | Channel level: 2 digits = whole dB, 3 = tenths, 50 = 0 dB (`535` = +3.5 dB, `46` = −4 dB). Sent for all 33 possible channels. |
 | `SSSDEFL 0260` / `0121` | Distance **or** delay, depending on the `SSSDESTP` line that ends the block. Only sent for configured speakers, so it tells which speakers exist. |
 | `SSSDESTP 01M` / `01S` | ✅ Unit marker. `01M` (Dirac Off): values are distances in cm (`0260` = 2.60 m). `01S` (Dirac filter): values are **delays in 0.1 ms** (`0121` = 12.1 ms). Verified against the receiver's settings print (16 Nov 2026): sub 0.0 ms, other channels 10.9–13.3 ms, same pattern as the telnet values (sub `0000`, SL largest, heights smallest). |
+| `SSSDE ?` | ✅ Read-only query (verified 2026-11-23, sent via HA `denonavr.get_command`). Answers `SSSDE<ch>` for **all** 33 channels (unconfigured ones at defaults `0300`/`0360`), then `SSSDESTP`, then `SSSDE END`. |
 | `SS2DSSDEFL 0121`, `SS2DSCLVFL 52` | Same for FL/FR in a second ("2DS") block, probably the 2-channel/Direct set. Not used yet. |
 | `SSTTL*` | Test tone levels. Not used. |
+
+A slot change only pushes `SSSDE<ch>` lines when the values change. Slot 1 → 2 (same delays) pushed
+just `SSSDESTP 01S`. So HA asks `SSSDE ?` once after setup and only updates speakers it already knows from
+a pushed dump.
 
 Dirac delays: the sub is the 0 ms reference (its own latency), so the common ~12 ms offset is not
 distance. Only the differences matter: a larger delay = acoustically closer, 1 ms ≈ 0.343 m. HA shows

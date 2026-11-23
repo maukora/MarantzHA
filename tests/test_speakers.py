@@ -32,6 +32,7 @@ FIRST = ROOT / "captures" / "20261122-2227-first-probe.log"
         ("SSSDEFL 0260", "distance", "FL", 260),
         ("SSSDESW 0000", "distance", "SW", 0),
         ("SSSDESTP 01S", "distance_step", None, "01S"),
+        ("SSSDE END", "distance_end", None, None),
     ],
 )
 def test_captured_lines(line, kind, channel, value):
@@ -40,7 +41,7 @@ def test_captured_lines(line, kind, channel, value):
 
 
 @pytest.mark.parametrize(
-    "line", ["SSLEV END", "SSSDE END", "SSTTLFL 50", "SSINFAISSIG 25", "PSSWL 46", "SSLEVFL X"]
+    "line", ["SSLEV END", "SSTTLFL 50", "SSINFAISSIG 25", "PSSWL 46", "SSLEVFL X"]
 )
 def test_other_lines_ignored(line):
     assert speakers.parse_line(line) is None

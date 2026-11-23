@@ -14,8 +14,11 @@ a full dump (Dirac stores levels and distances per filter):
                       (matches the delays in the receiver's settings print:
                        subwoofer 0 ms, other channels 11-13 ms)
 
-Levels are sent for every possible channel, distances only for the speakers
-that are set up, so the distance lines decide which speakers get entities.
+Levels are sent for every possible channel. Pushed distance lines come only
+for the speakers that are set up (and only when the values change, e.g. Dirac
+Off -> filter), so they decide which speakers get entities. The SSSDE ? query
+answers for every channel and ends with "SSSDE END"; it may only update
+speakers that already have entities.
 No Home Assistant imports.
 """
 
@@ -27,6 +30,10 @@ LEVEL = "level"
 DISTANCE = "distance"
 DELAY = "delay"
 DISTANCE_STEP = "distance_step"
+DISTANCE_END = "distance_end"
+# Read-only query: answers with SSSDE<ch> for ALL channels (configured or
+# not, unconfigured ones at defaults like 0300/0360), SSSDESTP, SSSDE END.
+SPEAKER_QUERY = "SSSDE ?"
 
 CHANNEL_NAMES = {
     "FL": "Front left",
@@ -70,7 +77,7 @@ CHANNEL_NAMES = {
 class SpeakerValue:
     """One parsed speaker line."""
 
-    kind: str  # LEVEL, DISTANCE or DISTANCE_STEP
+    kind: str  # LEVEL, DISTANCE, DISTANCE_STEP or DISTANCE_END
     channel: str | None
     value: float | str | None
 
@@ -157,6 +164,8 @@ def parse_speaker(event: str, parameter: str) -> SpeakerValue | None:
         if channel and (level := parse_level(value)) is not None:
             return SpeakerValue(LEVEL, channel, level)
         return None
+    if param == "SDE END":
+        return SpeakerValue(DISTANCE_END, None, None)
     if param.startswith("SDESTP "):
         return SpeakerValue(DISTANCE_STEP, None, param[7:])
     if param.startswith("SDE") and param != "SDE END":

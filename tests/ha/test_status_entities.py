@@ -19,9 +19,7 @@ def state(hass: HomeAssistant, entity_id: str) -> str:
 
 async def test_signal_sensors_follow_pushes(hass: HomeAssistant, receiver: FakeReceiver):
     await setup(hass, receiver, make_entry())
-    receiver.async_send_telnet_commands.assert_awaited_once_with(
-        "SSINFAISSIG ?", "SSINFAISFSV ?"
-    )
+    receiver.async_send_telnet_commands.assert_any_await("SSINFAISSIG ?", "SSINFAISFSV ?")
     assert state(hass, "sensor.av_20_input_signal") == STATE_UNKNOWN
 
     for line in [
