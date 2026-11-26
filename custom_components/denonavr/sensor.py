@@ -35,6 +35,7 @@ from .av_status import (
 )
 from .const import CONF_USE_TELNET, DEFAULT_USE_TELNET
 from .entity import DenonTelnetEntity
+from .firmware import DenonFirmwareSensor
 from .setting_entity import DenonSettingEntity
 from .speaker_sensor import SpeakerHub
 from .speakers import SPEAKER_CONFIG_QUERY, SPEAKER_QUERY
@@ -50,9 +51,11 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up sensors (telnet only: the values are pushed as events)."""
+    receiver = config_entry.runtime_data
+    # The firmware version comes from the HEOS device, not telnet.
+    async_add_entities([DenonFirmwareSensor(receiver, config_entry)])
     if not config_entry.options.get(CONF_USE_TELNET, DEFAULT_USE_TELNET):
         return
-    receiver = config_entry.runtime_data
     async_add_entities(
         [
             DenonStatusSensor(receiver, config_entry, INPUT_FORMAT),

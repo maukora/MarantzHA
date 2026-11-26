@@ -39,6 +39,14 @@ title, artist, album, track position) while a HEOS/network input is selected. Th
 by the receiver's serial number (attribute `heos_entity_id`). Nothing extra connects to the receiver:
 the data comes from the HEOS entity in HA.
 
+### Firmware version
+`sensor.av_20_firmware_version` (diagnostic) shows the receiver's firmware, e.g. "3.139.175", and the
+version is also shown on the AV 20 device page. The receiver doesn't report it over telnet, so it is read
+from the HEOS device in HA (same serial match as above) and follows it when HEOS updates the device. It
+works without the telnet option, and is unavailable if the core HEOS integration isn't set up. Use its
+history or a state trigger to see when the firmware changed. It doesn't tell whether new firmware is
+available.
+
 ### Entities added (all push-updated over telnet; need "Use Telnet connection")
 | Entity | What it shows | From |
 |---|---|---|

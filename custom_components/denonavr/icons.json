@@ -70,6 +70,9 @@
       },
       "speaker_layout": {
         "default": "mdi:surround-sound"
+      },
+      "firmware_version": {
+        "default": "mdi:chip"
       }
     },
     "binary_sensor": {
