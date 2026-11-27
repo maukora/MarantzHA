@@ -132,6 +132,9 @@
       },
       "speaker_layout": {
         "name": "Speaker layout"
+      },
+      "firmware_version": {
+        "name": "Firmware version"
       }
     },
     "binary_sensor": {

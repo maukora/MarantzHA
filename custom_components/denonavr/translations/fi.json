@@ -132,6 +132,9 @@
       },
       "speaker_layout": {
         "name": "Kaiutinkokoonpano"
+      },
+      "firmware_version": {
+        "name": "Laiteohjelmiston versio"
       }
     },
     "binary_sensor": {
